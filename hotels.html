@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Гостиницы для отчёта</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="hotels.js"></script>
+<style>body{font-family:system-ui,sans-serif}.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}@media print{.noprint{display:none!important}body{background:#fff}}</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+<header class="top text-white noprint"><div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center gap-3">
+<div><div class="text-xs tracking-widest text-blue-200">КОМАНДИРОВКИ</div>
+<h1 class="text-xl font-semibold">Гостиницы</h1></div>
+<nav class="flex gap-2 text-sm">
+<a class="px-3 py-2 bg-white/15 rounded-lg" href="index.html?v=11">Маршруты</a>
+<button type="button" class="px-3 py-2 bg-white text-slate-900 rounded-lg" onclick="window.print()">Печать / PDF</button>
+</nav></div></header>
+<main class="max-w-5xl mx-auto px-4 py-6">
+<div class="bg-white border rounded-2xl p-4 noprint mb-4">
+<input id="q" class="w-full px-3 py-3 border rounded-xl" placeholder="Поиск: Бийск, Омск, Уют…">
+<p class="text-xs text-slate-500 mt-2">Цена — сумма для отчёта. Адреса допиши списком, поставлю в таблицу.</p>
+</div>
+<div class="overflow-auto bg-white border rounded-2xl">
+<table class="w-full text-sm">
+<thead class="bg-slate-50 text-left"><tr>
+<th class="p-3">Название</th>
+<th class="p-3">Адрес</th>
+<th class="p-3 text-right">Для отчёта, ₽</th>
+</tr></thead>
+<tbody id="tb"></tbody>
+</table>
+</div>
+</main>
+<script>
+function rub(n){return Number(n).toLocaleString("ru-RU");}
+function draw(){
+var q=(document.getElementById("q").value||"").toLowerCase();
+var rows=(window.HOTELS||[]).filter(function(h){
+var s=(h.n+" "+(h.a||"")).toLowerCase();
+return !q || s.indexOf(q)>=0;
+});
+document.getElementById("tb").innerHTML=rows.map(function(h){
+return "<tr class='border-t'><td class='p-3 font-medium'>"+h.n+"</td><td class='p-3 text-slate-600'>"+(h.a||"—")+"</td><td class='p-3 text-right whitespace-nowrap'>"+rub(h.p)+"</td></tr>";
+}).join("") || "<tr><td class='p-4' colspan='3'>Нет совпадений</td></tr>";
+}
+document.getElementById("q").oninput=draw; draw();
+</script>
+</body></html>
