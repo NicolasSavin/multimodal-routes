@@ -2,55 +2,59 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Командировки v7</title>
+<title>Командировки v8</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>body{font-family:system-ui,sans-serif}.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}</style>
 </head>
 <body class="bg-slate-100 min-h-screen">
 <header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5">
-<div class="text-xs tracking-widest text-blue-200">ВНУТРЕННИЙ СЕРВИС</div>
-<h1 class="text-2xl font-semibold">Маршруты командировок · v7</h1>
-<p class="text-sm text-blue-100 mt-1">Живое расписание Яндекс · пошаговая пересадка</p>
+<div class="text-xs tracking-widest text-blue-200">СЕРВИС КОМАНДИРОВОК</div>
+<h1 class="text-2xl font-semibold">Маршруты · v8</h1>
+<p class="text-sm text-blue-100 mt-1">Живые рейсы через Yandex Cloud (РФ), не Render US</p>
 </div></header>
 <main class="max-w-5xl mx-auto px-4 py-6">
 <form id="f" class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
 <div class="grid md:grid-cols-2 gap-3">
-<div><label class="text-sm font-medium">Откуда</label><input id="from" class="w-full mt-1 px-3 py-3 border rounded-xl" required placeholder="Агрыз"></div>
-<div><label class="text-sm font-medium">Куда</label><input id="to" class="w-full mt-1 px-3 py-3 border rounded-xl" required placeholder="Барнаул"></div>
+<div><label class="text-sm font-medium">Откуда</label><input id="from" class="w-full mt-1 px-3 py-3 border rounded-xl" required placeholder="Москва, Казань, Ижевск"></div>
+<div><label class="text-sm font-medium">Куда</label><input id="to" class="w-full mt-1 px-3 py-3 border rounded-xl" required placeholder="Барнаул, Екатеринбург"></div>
 </div>
 <div class="grid sm:grid-cols-2 gap-3">
 <div><label class="text-sm">Дата</label><input type="date" id="date" class="w-full mt-1 px-3 py-3 border rounded-xl" required></div>
 <div><label class="text-sm">Сотрудников</label><select id="pax" class="w-full mt-1 px-3 py-3 border rounded-xl"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
 </div>
-<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Найти маршруты</button>
+<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Найти</button>
 <p id="st" class="text-sm text-slate-500"></p>
 </form>
 <div id="list" class="mt-5 space-y-3"></div>
 </main>
 <script>
-var API="https://multimodal-routes.onrender.com";
+var API="https://bba1p30liradr6hj8olf.containers.yandexcloud.net";
 try{var t=new Date();t.setDate(t.getDate()+1);document.getElementById("date").value=t.toISOString().slice(0,10);}catch(e){}
-function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return s;return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).replace("T"," ").slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
 var fr=document.getElementById("from").value.trim();
 var to=document.getElementById("to").value.trim();
 var date=document.getElementById("date").value;
+var pax=+document.getElementById("pax").value;
 var st=document.getElementById("st"); var box=document.getElementById("list");
-st.textContent="Ищём живые рейсы… первый запрос к Render может занять 30–50 сек.";
-box.innerHTML="";
+st.textContent="Ищём на сервере в РФ…"; box.innerHTML="";
 try{
-var r=await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&adults=1");
+var r=await fetch(API+"/api/v1/routes/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({origin:fr,destination:to,departure_date:date,passengers:pax,allowed_transport:["train","bus"],max_transfers:1})});
 var j=await r.json();
-if(!j.yandex_configured){st.textContent="API жив, но на Render нет YANDEX_RASP_KEY. Добавь ключ в Environment и перезапусти сервис.";}
-else st.textContent="Источник: "+(j.source||"—")+", рейсов: "+(j.trains||[]).length;
-var trains=j.trains||[];
-if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Живых рейсов нет. Проверь ключ Яндекса на Render или другую дату.</div>";return;}
-box.innerHTML=trains.map(function(x){
-var kind=x.type==="bus"?"Автобус":"Поезд";
-var tr=x.has_transfers?"Есть пересадка":"Прямой";
-return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>"+kind+" · "+tr+"</div><h3 class='font-semibold text-lg'>"+(x.number||"")+" "+(x.name||"")+"</h3><p class='text-sm mt-1'>"+(x.from||fr)+" <b>"+fmt(x.dep)+"</b> → "+(x.to||to)+" <b>"+fmt(x.arr)+"</b></p><p class='text-xs text-slate-500 mt-2'>Места в купе РЖД с этого сервера не отдаёт — проверяйте в кассе ржд.рф</p></article>";
+var routes=j.routes||j.partially_confirmed_routes||[];
+var warn=(j.warnings||[]).join(" ");
+st.textContent=(routes.length?("Найдено: "+routes.length):"Пусто")+(warn?(" · "+warn):"");
+if(!routes.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Нет рейсов. Попробуй крупный город (Москва, Казань, Екатеринбург, Барнаул). Мелкие станции вроде Агрыза каталог может не знать.</div>";return;}
+box.innerHTML=routes.map(function(rt,i){
+var segs=rt.segments||[];
+var steps=segs.map(function(s,n){
+var kind=s.transport_type==="bus"?"Автобус":"Поезд";
+return "<div class='flex gap-3 my-2'><div class='w-7 h-7 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center'>"+(n+1)+"</div><div><b>"+kind+" "+(s.number||"")+"</b><div class='text-sm'>"+s.origin+" <b>"+fmt(s.departure_time)+"</b> → "+s.destination+" <b>"+fmt(s.arrival_time)+"</b></div></div></div>";
 }).join("");
-}catch(err){st.textContent="Ошибка API: "+err;}
+var tr=rt.transfer_city?("<div class='bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm'>Пересадка: <b>"+rt.transfer_city+"</b>"+(rt.transfer_duration_minutes?(" · "+rt.transfer_duration_minutes+" мин"):"")+"</div>"):"";
+return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+(rt.transfers_count?(" · пересадок: "+rt.transfers_count):" · прямой")+"</div>"+steps+tr+"</article>";
+}).join("");
+}catch(err){st.textContent="Ошибка: "+err;}
 };
 </script></body></html>
