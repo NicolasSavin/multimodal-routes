@@ -72,6 +72,19 @@ def yandex_search(fr, to, date):
     return out, data.get("error") or "ok"
 
 
+def rzd_seats(fr, to, date, pax):
+    r = requests.get(
+        YC + "/api/v1/seats/rzd",
+        params={"origin": fr, "destination": to, "date": date, "passengers": pax},
+        timeout=35,
+    )
+    return r.json()
+
+
+def _norm(n):
+    return "".join(ch for ch in str(n or "").upper() if ch.isalnum())
+
+
 @app.get("/health")
 def health():
     return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY)})
@@ -82,68 +95,42 @@ def trains():
     origin = (request.args.get("from") or "").strip()
     dest = (request.args.get("to") or "").strip()
     date = (request.args.get("date") or "").strip()
+    pax = int(request.args.get("adults") or request.args.get("pax") or 1)
     if not origin or not dest or not date:
         return jsonify({"error": "from, to, date"}), 400
     err = None
+    trains_out, status = [], None
     try:
         trains_out, status = yandex_search(origin, dest, date)
-        return jsonify(
-            {
-                "source": "yandex-rasp",
-                "from": origin,
-                "to": dest,
-                "trains": trains_out,
-                "yandex_configured": bool(YKEY),
-                "status": status,
-            }
-        )
     except Exception as e:
         err = str(e)
-        trains_out = []
+    seats = {}
+    seats_err = None
     try:
-        r = requests.post(
-            YC + "/api/v1/routes/search",
-            json={
-                "origin": origin,
-                "destination": dest,
-                "departure_date": date,
-                "passengers": 1,
-                "allowed_transport": ["train", "bus"],
-                "max_transfers": 1,
-            },
-            timeout=25,
-        )
-        data = r.json()
-        routes = data.get("routes") or data.get("partially_confirmed_routes") or []
-        for rt in routes:
-            segs = rt.get("segments") or []
-            first = segs[0] if segs else {}
-            last = segs[-1] if segs else {}
-            trains_out.append(
-                {
-                    "number": first.get("number"),
-                    "dep": first.get("departure_time"),
-                    "arr": last.get("arrival_time"),
-                    "from": first.get("origin") or origin,
-                    "to": last.get("destination") or dest,
-                    "type": first.get("transport_type") or "train",
-                    "has_transfers": bool(rt.get("transfers_count")),
-                    "transfer_city": rt.get("transfer_city"),
-                    "segments": segs,
-                }
-            )
-        return jsonify(
-            {
-                "source": "yandex-cloud-fallback",
-                "from": origin,
-                "to": dest,
-                "trains": trains_out,
-                "yandex_configured": bool(YKEY),
-                "error": err,
-            }
-        )
-    except Exception as e2:
-        return jsonify({"source": "error", "trains": [], "error": err or str(e2), "yandex_configured": bool(YKEY)})
+        raw = rzd_seats(origin, dest, date, pax)
+        if not raw.get("ok"):
+            seats_err = raw.get("error") or raw.get("error_type")
+        for t in raw.get("trains") or []:
+            seats[_norm(t.get("number"))] = t
+    except Exception as e:
+        seats_err = str(e)
+    for item in trains_out:
+        hit = seats.get(_norm(item.get("number")))
+        if hit:
+            item["rzd"] = hit
+    return jsonify(
+        {
+            "source": "yandex-rasp+rzd" if trains_out else "error",
+            "from": origin,
+            "to": dest,
+            "trains": trains_out,
+            "yandex_configured": bool(YKEY),
+            "status": status,
+            "error": err,
+            "rzd_error": seats_err,
+            "rzd_trains": len(seats),
+        }
+    )
 
 
 if __name__ == "__main__":
