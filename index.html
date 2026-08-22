@@ -4,111 +4,55 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>МультиМаршрут — поезда и автобусы по России</title>
-  <meta name="description" content="Составление мультимодальных маршрутов на поездах и автобусах по России с проверкой мест в одном купе и нижних полок" />
+  <meta name="description" content="Составление мультимодальных маршрутов на поездах и автобусах по России" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            rzd: {
-              red: '#E31E24',
-              dark: '#1a1a2e',
-              light: '#f8f9fa'
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif']
-          }
-        }
-      }
-    }
+    tailwind.config = { theme: { extend: { colors: { rzd: { red: '#E31E24', dark: '#1a1a2e', light: '#f8f9fa' } }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } }
   </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
-    .gradient-bg {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    }
-    .card-hover:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    }
-    .timeline-line {
-      background: linear-gradient(to bottom, #E31E24, #3b82f6);
-    }
-    .seat-badge {
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    .autocomplete-item:hover {
-      background-color: #fee2e2;
-    }
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(0.5);
-    }
+    .gradient-bg { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+    .timeline-line { background: linear-gradient(to bottom, #E31E24, #3b82f6); }
+    .autocomplete-item:hover { background-color: #fee2e2; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen">
-  <!-- Header -->
   <header class="gradient-bg text-white shadow-lg sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="bg-rzd-red p-2.5 rounded-xl shadow-lg">
-          <i class="fas fa-train text-xl"></i>
-        </div>
+        <div class="bg-rzd-red p-2.5 rounded-xl shadow-lg"><i class="fas fa-train text-xl"></i></div>
         <div>
           <h1 class="text-xl font-bold tracking-tight">МультиМаршрут</h1>
           <p class="text-xs text-blue-200 opacity-90">Поезда + Автобусы по России</p>
         </div>
       </div>
-      <div class="hidden sm:flex items-center gap-4 text-sm">
-        <span class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full">
-          <i class="fas fa-check-circle text-green-400"></i> Проверка мест
-        </span>
-        <span class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full">
-          <i class="fas fa-exchange-alt text-blue-300"></i> Мультимодальность
-        </span>
-      </div>
     </div>
   </header>
-
   <main class="max-w-6xl mx-auto px-4 py-8">
-    <!-- Search Form -->
     <section class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mb-8 border border-gray-100">
-      <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-        <i class="fas fa-search-location text-rzd-red"></i>
-        Составить маршрут
-      </h2>
-
+      <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i class="fas fa-search-location text-rzd-red"></i> Составить маршрут</h2>
       <form id="searchForm" class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- From -->
           <div class="relative">
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Откуда</label>
             <div class="relative">
               <i class="fas fa-map-marker-alt absolute left-3 top-1/2 -translate-y-1/2 text-rzd-red"></i>
-              <input type="text" id="fromCity" autocomplete="off" placeholder="Москва, Казанский вокзал"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rzd-red focus:border-transparent outline-none transition" required />
+              <input type="text" id="fromCity" autocomplete="off" placeholder="Любой город или станция: Агрыз, Ижевск, Бийск..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rzd-red outline-none" required />
               <div id="fromSuggestions" class="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg hidden max-h-60 overflow-y-auto"></div>
             </div>
           </div>
-          <!-- To -->
           <div class="relative">
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Куда</label>
             <div class="relative">
               <i class="fas fa-flag-checkered absolute left-3 top-1/2 -translate-y-1/2 text-blue-600"></i>
-              <input type="text" id="toCity" autocomplete="off" placeholder="Санкт-Петербург, Московский вокзал"
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rzd-red focus:border-transparent outline-none transition" required />
+              <input type="text" id="toCity" autocomplete="off" placeholder="Любой город или станция" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rzd-red outline-none" required />
               <div id="toSuggestions" class="absolute z-20 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg hidden max-h-60 overflow-y-auto"></div>
             </div>
           </div>
         </div>
-
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Дата отправления</label>
@@ -133,75 +77,22 @@
             </select>
           </div>
         </div>
-
-        <!-- Optional filters -->
         <div class="bg-red-50 border border-red-100 rounded-xl p-4">
-          <p class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <i class="fas fa-sliders-h text-rzd-red"></i>
-            Опциональные фильтры по местам (только для поездов)
-          </p>
+          <p class="text-sm font-semibold text-gray-800 mb-3">Опциональные фильтры по местам</p>
           <div class="flex flex-wrap gap-4">
-            <label class="flex items-center gap-2 cursor-pointer group">
-              <input type="checkbox" id="sameCompartment" class="w-5 h-5 rounded border-gray-300 text-rzd-red focus:ring-rzd-red" />
-              <span class="text-sm group-hover:text-rzd-red transition">Места в одном купе</span>
-              <span class="text-xs bg-gray-200 px-2 py-0.5 rounded-full text-gray-600">для 2+</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer group">
-              <input type="checkbox" id="lowerBerths" class="w-5 h-5 rounded border-gray-300 text-rzd-red focus:ring-rzd-red" />
-              <span class="text-sm group-hover:text-rzd-red transition">Только нижние полки</span>
-            </label>
+            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="sameCompartment" class="w-5 h-5 rounded text-rzd-red" /> <span class="text-sm">Места в одном купе</span></label>
+            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="lowerBerths" class="w-5 h-5 rounded text-rzd-red" /> <span class="text-sm">Только нижние полки</span></label>
           </div>
-          <p class="text-xs text-gray-500 mt-2">При включении фильтров показываются только поезда, где доступны соответствующие места (демо-данные).</p>
+          <p class="text-xs text-gray-500 mt-2">Можно ввести любую станцию — даже если её нет в подсказках. Живой справочник всех станций РЖД — только через их API.</p>
         </div>
-
-        <button type="submit" id="searchBtn"
-          class="w-full sm:w-auto px-8 py-3.5 bg-rzd-red hover:bg-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2">
-          <i class="fas fa-search"></i>
-          Найти маршруты
-        </button>
+        <button type="submit" class="px-8 py-3.5 bg-rzd-red hover:bg-red-700 text-white font-semibold rounded-xl"><i class="fas fa-search"></i> Найти маршруты</button>
       </form>
     </section>
-
-    <!-- Loading -->
-    <div id="loading" class="hidden text-center py-16">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-rzd-red border-t-transparent"></div>
-      <p class="mt-4 text-gray-600">Ищем лучшие комбинации поездов и автобусов...</p>
-    </div>
-
-    <!-- Results -->
-    <section id="results" class="hidden space-y-6">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold">Найденные маршруты</h2>
-        <span id="resultsCount" class="text-sm text-gray-500"></span>
-      </div>
-      <div id="routesList" class="space-y-5"></div>
-    </section>
-
-    <!-- Empty / initial state -->
-    <section id="emptyState" class="text-center py-16">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-red-50 rounded-full mb-4">
-        <i class="fas fa-route text-3xl text-rzd-red"></i>
-      </div>
-      <h3 class="text-xl font-semibold text-gray-800 mb-2">Выберите маршрут</h3>
-      <p class="text-gray-500 max-w-md mx-auto">Укажите города, дату и при необходимости фильтры по местам — мы подберём прямые и мультимодальные варианты по всей России.</p>
-      <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto text-sm">
-        <button class="quick-route bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-rzd-red hover:text-rzd-red transition" data-from="Москва" data-to="Санкт-Петербург">Москва → СПб</button>
-        <button class="quick-route bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-rzd-red hover:text-rzd-red transition" data-from="Москва" data-to="Казань">Москва → Казань</button>
-        <button class="quick-route bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-rzd-red hover:text-rzd-red transition" data-from="Санкт-Петербург" data-to="Казань">СПб → Казань</button>
-        <button class="quick-route bg-white border border-gray-200 rounded-lg px-3 py-2 hover:border-rzd-red hover:text-rzd-red transition" data-from="Москва" data-to="Сочи">Москва → Сочи</button>
-      </div>
-    </section>
+    <div id="loading" class="hidden text-center py-16"><div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-rzd-red border-t-transparent"></div><p class="mt-4 text-gray-600">Ищем маршруты...</p></div>
+    <section id="results" class="hidden space-y-6"><div class="flex items-center justify-between"><h2 class="text-xl font-bold">Найденные маршруты</h2><span id="resultsCount" class="text-sm text-gray-500"></span></div><div id="routesList" class="space-y-5"></div></section>
+    <section id="emptyState" class="text-center py-16"><h3 class="text-xl font-semibold">Выберите маршрут</h3><p class="text-gray-500 mt-2">200+ городов в подсказках. Можно вписать любую станцию вручную.</p></section>
   </main>
-
-  <!-- Footer -->
-  <footer class="bg-gray-900 text-gray-400 py-8 mt-16">
-    <div class="max-w-6xl mx-auto px-4 text-center text-sm">
-      <p class="mb-2">МультиМаршрут — демонстрационный сервис составления мультимодальных маршрутов (ЖД + автобусы) по России.</p>
-      <p class="text-xs opacity-70">В реальном проекте интегрируется с API Яндекс.Расписаний, неофициальным API РЖД (ticket.rzd.ru) и расписаниями автобусных перевозчиков. Проверка мест в одном купе и нижних полок реализуется через детализацию вагонов.</p>
-      <p class="mt-4 text-xs">© 2026 · Демо-версия · Данные условные</p>
-    </div>
-  </footer>
-
+  <script src="cities.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
