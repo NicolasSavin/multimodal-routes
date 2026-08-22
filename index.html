@@ -2,21 +2,21 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Командировки v8</title>
+<title>Командировки v9</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>body{font-family:system-ui,sans-serif}.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}</style>
 </head>
 <body class="bg-slate-100 min-h-screen">
 <header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5">
 <div class="text-xs tracking-widest text-blue-200">СЕРВИС КОМАНДИРОВОК</div>
-<h1 class="text-2xl font-semibold">Маршруты · v8</h1>
-<p class="text-sm text-blue-100 mt-1">Живые рейсы через Yandex Cloud (РФ), не Render US</p>
+<h1 class="text-2xl font-semibold">Маршруты · v9</h1>
+<p class="text-sm text-blue-100 mt-1">Поиск через прокси (без ошибки Failed to fetch)</p>
 </div></header>
 <main class="max-w-5xl mx-auto px-4 py-6">
 <form id="f" class="bg-white rounded-2xl shadow-sm border p-5 space-y-3">
 <div class="grid md:grid-cols-2 gap-3">
-<div><label class="text-sm font-medium">Откуда</label><input id="from" class="w-full mt-1 px-3 py-3 border rounded-xl" required placeholder="Москва, Казань, Ижевск"></div>
-<div><label class="text-sm font-medium">Куда</label><input id="to" class="w-full mt-1 px-3 py-3 border rounded-xl" required placeholder="Барнаул, Екатеринбург"></div>
+<div><label class="text-sm font-medium">Откуда</label><input id="from" class="w-full mt-1 px-3 py-3 border rounded-xl" required value="Казань"></div>
+<div><label class="text-sm font-medium">Куда</label><input id="to" class="w-full mt-1 px-3 py-3 border rounded-xl" required value="Екатеринбург"></div>
 </div>
 <div class="grid sm:grid-cols-2 gap-3">
 <div><label class="text-sm">Дата</label><input type="date" id="date" class="w-full mt-1 px-3 py-3 border rounded-xl" required></div>
@@ -28,7 +28,7 @@
 <div id="list" class="mt-5 space-y-3"></div>
 </main>
 <script>
-var API="https://bba1p30liradr6hj8olf.containers.yandexcloud.net";
+var API="https://multimodal-routes.onrender.com";
 try{var t=new Date();t.setDate(t.getDate()+1);document.getElementById("date").value=t.toISOString().slice(0,10);}catch(e){}
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).replace("T"," ").slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 document.getElementById("f").onsubmit=async function(e){
@@ -36,25 +36,26 @@ e.preventDefault();
 var fr=document.getElementById("from").value.trim();
 var to=document.getElementById("to").value.trim();
 var date=document.getElementById("date").value;
-var pax=+document.getElementById("pax").value;
+var pax=document.getElementById("pax").value;
 var st=document.getElementById("st"); var box=document.getElementById("list");
-st.textContent="Ищём на сервере в РФ…"; box.innerHTML="";
+st.textContent="Ищём… если Render спал, первый раз до 50 сек."; box.innerHTML="";
 try{
-var r=await fetch(API+"/api/v1/routes/search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({origin:fr,destination:to,departure_date:date,passengers:pax,allowed_transport:["train","bus"],max_transfers:1})});
+var url=API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax;
+var r=await fetch(url);
 var j=await r.json();
-var routes=j.routes||j.partially_confirmed_routes||[];
-var warn=(j.warnings||[]).join(" ");
-st.textContent=(routes.length?("Найдено: "+routes.length):"Пусто")+(warn?(" · "+warn):"");
-if(!routes.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Нет рейсов. Попробуй крупный город (Москва, Казань, Екатеринбург, Барнаул). Мелкие станции вроде Агрыза каталог может не знать.</div>";return;}
-box.innerHTML=routes.map(function(rt,i){
-var segs=rt.segments||[];
-var steps=segs.map(function(s,n){
+var trains=j.trains||[];
+st.textContent="Источник: "+(j.source||"—")+", вариантов: "+trains.length+((j.warnings&&j.warnings[0])?(" · "+j.warnings[0]):"");
+if(j.error){st.textContent+=" · "+j.error;}
+if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Нет рейсов. Попробуй Москва — Казань или другую дату. Дождись деплоя Render (зелёный Live).</div>";return;}
+box.innerHTML=trains.map(function(x,i){
+var segs=x.segments||[];
+var steps=segs.length?segs.map(function(s,n){
 var kind=s.transport_type==="bus"?"Автобус":"Поезд";
-return "<div class='flex gap-3 my-2'><div class='w-7 h-7 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center'>"+(n+1)+"</div><div><b>"+kind+" "+(s.number||"")+"</b><div class='text-sm'>"+s.origin+" <b>"+fmt(s.departure_time)+"</b> → "+s.destination+" <b>"+fmt(s.arrival_time)+"</b></div></div></div>";
+return "<div class='flex gap-3 my-2'><div class='w-7 h-7 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center'>"+(n+1)+"</div><div><b>"+kind+" "+(s.number||"")+"</b><div class='text-sm'>"+(s.origin||"")+" <b>"+fmt(s.departure_time)+"</b> → "+(s.destination||"")+" <b>"+fmt(s.arrival_time)+"</b></div></div></div>";
+}).join(""):("<p class='text-sm'>"+(x.from||fr)+" <b>"+fmt(x.dep)+"</b> → "+(x.to||to)+" <b>"+fmt(x.arr)+"</b></p>");
+var tr=x.transfer_city?("<div class='bg-amber-50 border rounded-xl p-3 text-sm mt-2'>Пересадка в <b>"+x.transfer_city+"</b></div>"):"";
+return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+(x.has_transfers?" · с пересадкой":" · прямой")+"</div>"+steps+tr+"</article>";
 }).join("");
-var tr=rt.transfer_city?("<div class='bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm'>Пересадка: <b>"+rt.transfer_city+"</b>"+(rt.transfer_duration_minutes?(" · "+rt.transfer_duration_minutes+" мин"):"")+"</div>"):"";
-return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+(rt.transfers_count?(" · пересадок: "+rt.transfers_count):" · прямой")+"</div>"+steps+tr+"</article>";
-}).join("");
-}catch(err){st.textContent="Ошибка: "+err;}
+}catch(err){st.textContent="Ошибка: "+err+". Подожди 1 мин — Render должен стать Live после коммита.";}
 };
 </script></body></html>
