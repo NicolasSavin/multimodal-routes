@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: multimodal-rzd
+    runtime: python
+    plan: free
+    rootDir: api
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 60
+    envVars:
+      - key: YANDEX_RASP_KEY
+        sync: false
