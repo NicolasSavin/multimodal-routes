@@ -2,127 +2,58 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Командировки v10</title>
+<title>Командировки v11</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<style>
-body{font-family:system-ui,sans-serif}
-.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}
-.seat{width:42px;height:28px;border-radius:6px;font-size:11px;display:flex;align-items:center;justify-content:center;color:#fff}
-.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
-</style>
+<style>body{font-family:system-ui,sans-serif}.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}</style>
 </head>
 <body class="bg-slate-100 min-h-screen">
-<header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5 flex justify-between gap-4 items-end">
-<div>
-<div class="text-xs tracking-widest text-blue-200">СЕРВИС КОМАНДИРОВОК</div>
-<h1 class="text-2xl font-semibold">Маршруты · v10</h1>
-<p class="text-sm text-blue-100 mt-1">Живые рейсы · купе / нижние · как пересесть</p>
-</div>
-<button type="button" onclick="document.getElementById('help').style.display='flex'" class="text-sm bg-white/15 px-3 py-2 rounded-lg">Как читать места</button>
+<header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5">
+<div class="text-xs tracking-widest text-blue-200">ПРОВЕРКА МЕСТ РЖД · БЕЗ ПОКУПКИ</div>
+<h1 class="text-2xl font-semibold">Маршруты · v11</h1>
+<p class="text-sm text-blue-100">Нижние и одно купе — из кассы РЖД через облако РФ</p>
 </div></header>
 <main class="max-w-5xl mx-auto px-4 py-6">
-<form id="f" class="bg-white rounded-2xl shadow-sm border p-5 space-y-4">
+<form id="f" class="bg-white rounded-2xl border p-5 space-y-3">
 <div class="grid md:grid-cols-2 gap-3">
-<div><label class="text-sm font-medium">Откуда</label><input id="from" class="w-full mt-1 px-3 py-3 border rounded-xl" required value="Казань"></div>
-<div><label class="text-sm font-medium">Куда</label><input id="to" class="w-full mt-1 px-3 py-3 border rounded-xl" required value="Екатеринбург"></div>
+<input id="from" class="px-3 py-3 border rounded-xl" required value="Казань" placeholder="Откуда">
+<input id="to" class="px-3 py-3 border rounded-xl" required value="Екатеринбург" placeholder="Куда">
 </div>
 <div class="grid sm:grid-cols-3 gap-3">
-<div><label class="text-sm">Дата</label><input type="date" id="date" class="w-full mt-1 px-3 py-3 border rounded-xl" required></div>
-<div><label class="text-sm">Сотрудников</label><select id="pax" class="w-full mt-1 px-3 py-3 border rounded-xl"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
-<div><label class="text-sm">Пересадки</label><select id="xfer" class="w-full mt-1 px-3 py-3 border rounded-xl"><option value="any">Можно с пересадкой</option><option value="direct">Только прямые</option><option value="xfer">Только с пересадкой</option></select></div>
+<input type="date" id="date" class="px-3 py-3 border rounded-xl" required>
+<select id="pax" class="px-3 py-3 border rounded-xl"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
+<select id="xfer" class="px-3 py-3 border rounded-xl"><option value="any">Все рейсы</option><option value="direct">Только прямые</option></select>
 </div>
-<div class="flex flex-wrap gap-4 text-sm">
-<label class="flex items-center gap-2"><input type="checkbox" id="coupe" class="w-4 h-4"> В одном купе</label>
-<label class="flex items-center gap-2"><input type="checkbox" id="lower" class="w-4 h-4"> Нижние полки</label>
-</div>
-<p class="text-xs text-slate-500">Фильтры купе/нижних — критерий для выбора в кассе РЖД. Яндекс отдаёт расписание, не карту мест.</p>
-<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Найти маршруты</button>
+<label class="text-sm flex gap-2 items-center"><input type="checkbox" id="need" checked> только где подходят нижние в одном купе</label>
+<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Проверить места</button>
 <p id="st" class="text-sm text-slate-500"></p>
 </form>
 <div id="list" class="mt-5 space-y-3"></div>
 </main>
-
-<div id="seatModal" class="modal" onclick="if(event.target.id==='seatModal')closeSeat()">
-<div class="bg-white rounded-2xl p-5 max-w-md w-full">
-<div class="flex justify-between items-center mb-3"><h3 class="font-semibold">Схема купе</h3><button type="button" onclick="closeSeat()" class="text-slate-500">закрыть</button></div>
-<p class="text-sm text-slate-600 mb-3">В купе 4 места. Нижние — нечётные (1, 3, 5…). Для «в одном купе» берите два места с одним номером купе.</p>
-<div class="space-y-3" id="coupeMap"></div>
-<p class="text-xs text-slate-500 mt-3">Красный = нижняя. Зелёный = верхняя. Это схема, не онлайн-наличие РЖД.</p>
-<a id="rzdLink" target="_blank" class="inline-block mt-3 text-sm text-blue-800 underline">Открыть кассу ржд.рф</a>
-</div></div>
-
-<div id="help" class="modal" onclick="if(event.target.id==='help')this.style.display='none'">
-<div class="bg-white rounded-2xl p-5 max-w-lg w-full text-sm space-y-2">
-<b>Как пользоваться</b>
-<p>1. Найти маршрут — живое расписание.</p>
-<p>2. «Схема мест» — как устроено купе и какие номера нижние.</p>
-<p>3. Билет и точные свободные места — только на ржд.рф / в кассе.</p>
-<button type="button" class="mt-2 px-3 py-2 bg-slate-800 text-white rounded-lg" onclick="document.getElementById('help').style.display='none'">Понятно</button>
-</div></div>
-
 <script>
 var API="https://multimodal-routes.onrender.com";
-var HUBS={
-"Москва":"Вокзал и автовокзал часто рядом (Курский/Павелецкий/Казанский). Заложите 60–90 мин на переезд между вокзалами. Такси или метро.",
-"Казань":"Казань-Пасс. и Казань-2 (Восстание) — разные станции. Автовокзал у пригорода / Южный. Заложите 50 мин.",
-"Екатеринбург":"Вокзал Екатеринбург-Пасс. и Северный автовокзал рядом (ул. Вокзальная). 10–15 мин пешком.",
-"Барнаул":"ЖД вокзал и автовокзал на пл. Победы — рядом. 10 мин пешком.",
-"Новосибирск":"Главный вокзал и автовокзал на красном пр-те. 10–20 мин.",
-"Ижевск":"ЖД вокзал и автовокзал на ул. Красноармейская / Устиновский. 15–25 мин на такси."
-};
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("date").value=t.toISOString().slice(0,10);}catch(e){}
-function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).replace("T"," ").slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
-function hubNote(city){
-if(!city)return "";
-for(var k in HUBS){if(city.toLowerCase().indexOf(k.toLowerCase())>=0)return HUBS[k];}
-return "Уточните на месте: жд-вокзал и автовокзал могут быть в разных точках. Заложите не менее 40 мин.";
+function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function badge(v,yes,no,unk){
+if(v===true) return "<span class='px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs'>"+yes+"</span>";
+if(v===false) return "<span class='px-2 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs'>"+no+"</span>";
+return "<span class='px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs'>"+unk+"</span>";
 }
-function openSeat(){
-var box=document.getElementById("coupeMap"); box.innerHTML="";
-for(var c=1;c<=3;c++){
-var row="<div class='border rounded-xl p-3'><div class='text-xs text-slate-500 mb-2'>Купе "+c+"</div><div class='flex justify-between'>";
-var n=(c-1)*4;
-row+="<div class='space-y-1'><div class='seat bg-rose-600'>"+(n+1)+" ниж</div><div class='seat bg-emerald-600'>"+(n+2)+" верх</div></div>";
-row+="<div class='space-y-1'><div class='seat bg-rose-600'>"+(n+3)+" ниж</div><div class='seat bg-emerald-600'>"+(n+4)+" верх</div></div></div></div>";
-box.innerHTML+=row;
-}
-document.getElementById("rzdLink").href="https://ticket.rzd.ru/";
-var m=document.getElementById("seatModal"); m.style.display="flex";
-}
-function closeSeat(){document.getElementById("seatModal").style.display="none";}
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
-var fr=document.getElementById("from").value.trim();
-var to=document.getElementById("to").value.trim();
-var date=document.getElementById("date").value;
-var pax=document.getElementById("pax").value;
-var wantC=document.getElementById("coupe").checked;
-var wantL=document.getElementById("lower").checked;
-var xfer=document.getElementById("xfer").value;
-var st=document.getElementById("st"); var box=document.getElementById("list");
-st.textContent="Ищём рейсы…"; box.innerHTML="";
+var fr=from.value.trim(), to=to.value.trim(), date=date.value, pax=+pax.value;
+var st=document.getElementById("st"), box=document.getElementById("list");
+st.textContent="Спрашиваем РЖД в облаке… может занять до минуты."; box.innerHTML="";
 try{
-var r=await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax);
-var j=await r.json();
-var trains=(j.trains||[]).filter(function(x){
-if(xfer==="direct" && x.has_transfers) return false;
-if(xfer==="xfer" && !x.has_transfers) return false;
-return true;
-});
-st.textContent="Найдено: "+trains.length+" · "+(j.source||"");
-if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Нет рейсов по фильтру. Снимите «только прямые» или смените дату. Дождитесь Live на Render, если источник не yandex-rasp.</div>";return;}
-var extra="";
-if(wantC||wantL) extra="<div class='bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm'>Выбрано: "+(wantC?"одно купе ":"")+(wantL?"нижние полки":"")+". На ржд.рф выберите купе и нечётные места. Для "+pax+" сотрудников нужны соседние места в одном купе.</div>";
-box.innerHTML=extra+trains.map(function(x,i){
-var segs=x.segments||[];
-var steps=segs.length?segs.map(function(s,n){
-var kind=s.transport_type==="bus"?"Автобус":"Поезд";
-return "<div class='flex gap-3 my-2'><div class='w-7 h-7 rounded-full bg-slate-800 text-white text-xs flex items-center justify-center'>"+(n+1)+"</div><div><b>"+kind+" "+(s.number||x.number||"")+"</b><div class='text-sm'>"+(s.origin||x.from)+" <b>"+fmt(s.departure_time||x.dep)+"</b> → "+(s.destination||x.to)+" <b>"+fmt(s.arrival_time||x.arr)+"</b></div></div></div>";
-}).join(""):("<p class='text-sm'><b>"+(x.number||"")+"</b> "+(x.from||fr)+" <b>"+fmt(x.dep)+"</b> → "+(x.to||to)+" <b>"+fmt(x.arr)+"</b></p>");
-var city=x.transfer_city|| (x.has_transfers?to:"");
-var tr=x.has_transfers?("<div class='bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm mt-2'><b>Пересадка.</b> "+hubNote(x.transfer_city||x.from||fr)+"</div>"):"";
-return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+(x.has_transfers?" · есть пересадка":" · прямой")+"</div>"+steps+tr+"<div class='flex flex-wrap gap-2 mt-3'><button type='button' class='px-3 py-2 bg-slate-800 text-white rounded-lg text-sm' onclick='openSeat()'>Схема мест</button><a class='px-3 py-2 border rounded-lg text-sm' target='_blank' href='https://ticket.rzd.ru/'>Выбрать места на РЖД</a></div></article>";
+var j=await (await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
+var trains=j.trains||[];
+if(xfer.value==="direct") trains=trains.filter(function(x){return !x.has_transfers;});
+if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true || r.lower_enough===true && pax===1;});
+st.textContent="Рейсов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД поездов с местами: "+(j.rzd_trains||0)));
+if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Нет вариантов. Сними галочку фильтра или подожди деплой облака (новый метод /api/v1/seats/rzd). На контейнере включи RZD_AVAILABILITY_ENABLED=true.</div>";return;}
+box.innerHTML=trains.map(function(x,i){
+var r=x.rzd||{};
+return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+" · "+(x.number||"")+"</div><p class='font-medium mt-1'>"+fmt(x.dep)+" → "+fmt(x.arr)+" · "+(x.from||fr)+" — "+(x.to||to)+"</p><div class='flex flex-wrap gap-2 mt-3'>"+badge(r.same_coupe_lower,"одно купе + нижние: есть","одно купе на нижних: нет","купе не подтверждено")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"<span class='text-xs text-slate-500'>нижних: "+(r.lower==null?"?":r.lower)+", всего мест: "+(r.available==null?"?":r.available)+"</span></div></article>";
 }).join("");
-}catch(err){st.textContent="Ошибка: "+err;}
+}catch(err){st.textContent=String(err);}
 };
 </script></body></html>
