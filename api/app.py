@@ -1,6 +1,5 @@
 import os
 import time
-from datetime import datetime
 
 import requests
 from flask import Flask, jsonify, request
@@ -10,6 +9,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 YKEY = os.environ.get("YANDEX_RASP_KEY") or os.environ.get("YANDEX_RASP_API_KEY") or ""
+# ticket.rzd.ru hangs from EU/US - off by default
+RZD_ON = os.environ.get("RZD_ENABLED", "0").lower() in {"1", "true", "yes"}
 RZD = "https://ticket.rzd.ru"
 RZD_HEADERS = {
     "User-Agent": "Mozilla/5.0",
@@ -22,7 +23,7 @@ def yandex_code(q):
     d = requests.get(
         "https://suggests.rasp.yandex.net/all_suggests",
         params={"format": "old", "part": q},
-        timeout=6,
+        timeout=(3, 6),
     ).json()
     for row in (d or [None, []])[1]:
         if row and str(row[0]).startswith(("c", "s")):
@@ -49,7 +50,7 @@ def yandex_search(fr, to, date):
             "transport_types": "train,bus",
             "transfers": "yes",
         },
-        timeout=10,
+        timeout=(3, 10),
     ).json()
     out = []
     for s in data.get("segments") or []:
@@ -94,7 +95,7 @@ def rzd_code(q):
         RZD + "/isdk/suggests",
         params={"Query": q, "TransportType": "rail", "GroupResults": "true", "Language": "ru"},
         headers=RZD_HEADERS,
-        timeout=5,
+        timeout=(2, 4),
     ).json()
     for n in data.get("transport_node_suggests") or []:
         codes = n.get("Codes") or {}
@@ -123,7 +124,7 @@ def rzd_seats(fr, to, date, pax):
             "getByLocalTime": "true",
         },
         headers=RZD_HEADERS,
-        timeout=6,
+        timeout=(2, 5),
     ).json()
     out = {}
     for t in data.get("Trains") or data.get("trains") or []:
@@ -135,7 +136,7 @@ def rzd_seats(fr, to, date, pax):
             low_n = int(low) if low is not None else 0
             lower += low_n
             typ = str(g.get("CarTypeName") or g.get("CarType") or "").lower()
-            if "купе" in typ or "coupe" in typ:
+            if "\u043a\u0443\u043f\u0435" in typ or "coupe" in typ:
                 coupe_lower += low_n
         key = "".join(ch for ch in str(num or "").upper() if ch.isalnum())
         out[key] = {
@@ -150,7 +151,15 @@ def rzd_seats(fr, to, date, pax):
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY), "region": "eu"})
+    return jsonify(
+        {
+            "ok": True,
+            "ts": int(time.time()),
+            "yandex": bool(YKEY),
+            "rzd_enabled": RZD_ON,
+            "region": "eu",
+        }
+    )
 
 
 @app.get("/trains")
@@ -161,24 +170,31 @@ def trains():
     pax = int(request.args.get("adults") or request.args.get("pax") or 1)
     if not origin or not dest or not date:
         return jsonify({"error": "from, to, date"}), 400
-    err = seats_err = None
+
+    err = None
     trains_out, status = [], None
     try:
         trains_out, status = yandex_search(origin, dest, date)
     except Exception as e:
         err = str(e)
-    seats = {}
-    try:
-        seats = rzd_seats(origin, dest, date, pax)
-    except Exception as e:
-        seats_err = str(e)
+
+    seats, seats_err = {}, None
+    if RZD_ON:
+        try:
+            seats = rzd_seats(origin, dest, date, pax)
+        except Exception as e:
+            seats_err = str(e)
+    else:
+        seats_err = "rzd_off_eu_hangs"
+
     for item in trains_out:
         key = "".join(ch for ch in str(item.get("number") or "").upper() if ch.isalnum())
         if key in seats:
             item["rzd"] = seats[key]
+
     return jsonify(
         {
-            "source": "yandex-rasp+rzd",
+            "source": "yandex-rasp",
             "from": origin,
             "to": dest,
             "trains": trains_out,
@@ -186,6 +202,7 @@ def trains():
             "error": err,
             "rzd_error": seats_err,
             "rzd_trains": len(seats),
+            "rzd_enabled": RZD_ON,
         }
     )
 
