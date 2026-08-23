@@ -23,7 +23,7 @@ label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:upperca
 .sug{position:absolute;left:0;right:0;top:100%;z-index:20;margin:4px 0 0;padding:6px;border-radius:14px;background:#0d1b2c;border:1px solid rgba(255,255,255,.12);display:none;max-height:240px;overflow:auto}
 .sug button{display:block;width:100%;text-align:left;background:transparent;border:0;color:#eef3f8;padding:8px 10px;border-radius:10px;cursor:pointer;font:inherit}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
-.check{font-size:14px;color:#d5deea}button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c)}
+button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c)}
 .more,.mapbtn{margin-top:10px;border:1px solid rgba(243,224,184,.3);background:transparent;color:#f3e0b8;padding:10px 16px;border-radius:999px;cursor:pointer;font:inherit}
 .more{display:none}#st{margin:12px 0 0;color:#9fb0c3;font-size:14px}.list{margin-top:18px;display:grid;gap:12px}
 .trip{position:relative}.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
@@ -44,16 +44,25 @@ label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:upperca
 <div class="bg"></div>
 <div class="wrap">
 <div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>вагон · купе · места</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>схема мест по вагонам</em></h1><p>Нижние в купе — нечётные номера. Зелёные места — нижние.</p></section>
+<section class="hero"><h1>Поезд плюс автобус<br><em>один фильтр мест</em></h1><p>Одно купе — все в одной кабине. Нижние — нечётные места, купе может быть разным.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
 <div class="field"><label class="l">Куда</label><input id="dest" required value="Екатеринбург"><div class="sug" id="sug-dest"></div></div>
 </div>
-<div class="grid3" style="margin-top:12px"><div><label class="l">Дата</label><input type="date" id="when" required></div><div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label class="l">Что показать</label><select id="xfer"><option value="any">Все</option><option value="sapsan">Сапсан / Ласточка</option><option value="mix">Поезд+автобус</option><option value="direct">Прямые</option></select></div></div>
+<div class="grid3" style="margin-top:12px">
+<div><label class="l">Дата</label><input type="date" id="when" required></div>
+<div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+<div><label class="l">Места</label>
+<select id="seats">
+<option value="">Любые</option>
+<option value="coupe">Одно купе, верх можно</option>
+<option value="lower">Только нижние</option>
+<option value="both" selected>Одно купе и нижние</option>
+</select></div>
+</div>
 <div class="row">
-<label class="check"><input type="checkbox" id="needCoupe"> одно купе</label>
-<label class="check"><input type="checkbox" id="needLower"> только нижние</label>
+<div style="flex:1"><label class="l">Рейсы</label><select id="xfer"><option value="any">Все</option><option value="sapsan">Сапсан / Ласточка</option><option value="mix">Поезд+автобус</option><option value="direct">Прямые</option></select></div>
 <button class="go" type="submit">Найти маршрут</button>
 </div>
 <p id="st"></p>
@@ -86,11 +95,11 @@ function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s
 function isSap(x){var t=((x.name||"")+" "+(x.number||"")).toLowerCase(); return /сапсан|sapsan|ласточк/.test(t) || /^7[5-7]/.test(String(x.number||""));}
 function kind(t,x){if(x&&isSap(x)) return "сапсан"; t=String(t||""); if(/bus|авто/.test(t)) return "автобус"; if(/mix/.test(t)) return "связка"; return "поезд";}
 function badge(v,yes,no,unk){if(v===true)return "<span class='b ok'>"+yes+"</span>";if(v===false)return "<span class='b no'>"+no+"</span>";return "<span class='b muted'>"+unk+"</span>";}
-function okSeat(r, coupe, lower){
-if(!r) return null;
-if(coupe && lower) return r.same_coupe_lower===true;
-if(coupe) return r.same_coupe===true || r.same_coupe_lower===true;
-if(lower) return r.lower_enough===true || r.same_coupe_lower===true;
+function okSeat(r, mode){
+if(!r || !mode) return true;
+if(mode==="both") return r.same_coupe_lower===true;
+if(mode==="coupe") return r.same_coupe===true || r.same_coupe_lower===true;
+if(mode==="lower") return r.lower_enough===true || r.same_coupe_lower===true;
 return true;
 }
 function seatNums(val){
@@ -122,20 +131,14 @@ try{
 var j=await (await fetch(API+"?path=/cars&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&train="+encodeURIComponent(x.number||"")+"&dep="+encodeURIComponent(x.dep||"")+"&pax="+lastQ.pax)).json();
 if(j.cars&&j.cars.length) cars=j.cars;
 }catch(e){}
-if(!cars.length){
-document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны.</p>";
-return;
-}
+if(!cars.length){document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны.</p>";return;}
 document.getElementById("seatGrid").innerHTML=cars.map(function(c,n){
-var seats=allSeats(c);
-var low=seats.filter(isLow);
+var seats=allSeats(c), low=seats.filter(isLow);
 var title=(c.car?("Вагон "+c.car+" · "):("Группа "+(n+1)+" · "))+(c.type||"");
-var comps=c.compartments||[];
-var compHtml="";
+var comps=c.compartments||[], compHtml="";
 if(comps.length){
 compHtml=comps.map(function(k,i){
-var places=seatNums(k.places||k.Places||k.freePlaces||k);
-var lows=places.filter(isLow);
+var places=seatNums(k.places||k.Places||k.freePlaces||k), lows=places.filter(isLow);
 return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+places.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join(" ")+(lows.length?" · нижних "+lows.length:" · нижних нет")+"</div>";
 }).join("");
 } else if(seats.length){
@@ -149,7 +152,7 @@ document.getElementById("more").onclick=function(){shown+=5; draw();};
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
 lastQ={fr:document.getElementById("orig").value.trim(), to:document.getElementById("dest").value.trim(), date:document.getElementById("when").value, pax:+document.getElementById("pax").value};
-var coupe=document.getElementById("needCoupe").checked, lower=document.getElementById("needLower").checked;
+var modeSeat=document.getElementById("seats").value;
 var st=document.getElementById("st"); st.textContent="Ищем…"; document.getElementById("list").innerHTML=""; document.getElementById("more").style.display="none"; shown=5;
 try{
 var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&pax="+lastQ.pax)).json();
@@ -158,7 +161,7 @@ if(mode==="direct") trains=trains.filter(function(x){return !x.has_transfers && 
 if(mode==="mix") trains=trains.filter(function(x){return x.type==="mixed" || (x.details&&x.details.length>1);});
 if(mode==="sapsan") trains=trains.filter(isSap);
 var hasSeat=trains.some(function(x){return x.rzd;});
-if((coupe||lower)&&hasSeat) trains=trains.filter(function(x){return isSap(x)||okSeat(x.rzd||{},coupe,lower)===true;});
+if(modeSeat && hasSeat) trains=trains.filter(function(x){return isSap(x)||okSeat(x.rzd||{}, modeSeat);});
 cache=trains;
 st.textContent="Вариантов: "+trains.length+(j.rzd_error?" · РЖД не ответила":(" · РЖД: "+(j.rzd_trains||0)));
 if(!trains.length){document.getElementById("list").innerHTML="<div class='warn'>Пусто</div>";return;} draw();
