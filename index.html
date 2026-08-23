@@ -43,8 +43,8 @@ button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inh
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>вагон · купе · места</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>один фильтр мест</em></h1><p>Одно купе — все в одной кабине. Нижние — нечётные места, купе может быть разным.</p></section>
+<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · сапсан</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<section class="hero"><h1>Поезд плюс автобус<br><em>фильтр по типу рейса</em></h1><p>Сапсан, поезд, автобус или связка. Места — отдельным списком.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
@@ -56,13 +56,20 @@ button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inh
 <div><label class="l">Места</label>
 <select id="seats">
 <option value="">Любые</option>
-<option value="coupe">Одно купе, верх можно</option>
+<option value="coupe">Только в одном купе</option>
 <option value="lower">Только нижние</option>
-<option value="both" selected>Одно купе и нижние</option>
+<option value="both">В одном купе только нижние</option>
 </select></div>
 </div>
 <div class="row">
-<div style="flex:1"><label class="l">Рейсы</label><select id="xfer"><option value="any">Все</option><option value="sapsan">Сапсан / Ласточка</option><option value="mix">Поезд+автобус</option><option value="direct">Прямые</option></select></div>
+<div style="flex:1"><label class="l">Рейсы</label>
+<select id="xfer">
+<option value="any">Все</option>
+<option value="sapsan">Сапсан / Ласточка</option>
+<option value="train">Поезд</option>
+<option value="bus">Автобус</option>
+<option value="mix">Поезд и автобус</option>
+</select></div>
 <button class="go" type="submit">Найти маршрут</button>
 </div>
 <p id="st"></p>
@@ -93,6 +100,26 @@ document.addEventListener("click", function(e){if(!box.contains(e.target)&&e.tar
 bindSuggest("orig"); bindSuggest("dest");
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 function isSap(x){var t=((x.name||"")+" "+(x.number||"")).toLowerCase(); return /сапсан|sapsan|ласточк/.test(t) || /^7[5-7]/.test(String(x.number||""));}
+function typesOf(x){
+var d=x.details||[];
+if(d.length) return d.map(function(p){return String(p.type||"");});
+return [String(x.type||"")];
+}
+function isBus(x){
+var t=typesOf(x).join(" ").toLowerCase()+" "+(x.type||"");
+return /bus|авто/.test(t) && !/train|поезд/.test(t) && x.type!=="mixed";
+}
+function isTrainOnly(x){
+if(isSap(x) || x.type==="mixed") return false;
+var t=typesOf(x).join(" ").toLowerCase();
+if(/bus|авто/.test(t) && /train|поезд/.test(t)) return false;
+return x.type==="train" || /train|поезд/.test(t) || (!/bus|авто/.test(t) && !x.has_transfers);
+}
+function isMix(x){
+if(x.type==="mixed") return true;
+var t=typesOf(x).join(" ").toLowerCase();
+return /bus|авто/.test(t) && /train|поезд/.test(t);
+}
 function kind(t,x){if(x&&isSap(x)) return "сапсан"; t=String(t||""); if(/bus|авто/.test(t)) return "автобус"; if(/mix/.test(t)) return "связка"; return "поезд";}
 function badge(v,yes,no,unk){if(v===true)return "<span class='b ok'>"+yes+"</span>";if(v===false)return "<span class='b no'>"+no+"</span>";return "<span class='b muted'>"+unk+"</span>";}
 function okSeat(r, mode){
@@ -157,14 +184,15 @@ var st=document.getElementById("st"); st.textContent="Ищем…"; document.get
 try{
 var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&pax="+lastQ.pax)).json();
 var trains=j.trains||[], mode=document.getElementById("xfer").value;
-if(mode==="direct") trains=trains.filter(function(x){return !x.has_transfers && x.type!=="mixed";});
-if(mode==="mix") trains=trains.filter(function(x){return x.type==="mixed" || (x.details&&x.details.length>1);});
 if(mode==="sapsan") trains=trains.filter(isSap);
+if(mode==="train") trains=trains.filter(isTrainOnly);
+if(mode==="bus") trains=trains.filter(isBus);
+if(mode==="mix") trains=trains.filter(isMix);
 var hasSeat=trains.some(function(x){return x.rzd;});
 if(modeSeat && hasSeat) trains=trains.filter(function(x){return isSap(x)||okSeat(x.rzd||{}, modeSeat);});
 cache=trains;
 st.textContent="Вариантов: "+trains.length+(j.rzd_error?" · РЖД не ответила":(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){document.getElementById("list").innerHTML="<div class='warn'>Пусто</div>";return;} draw();
+if(!trains.length){document.getElementById("list").innerHTML="<div class='warn'>Пусто по этому фильтру. Смени тип рейса или места.</div>";return;} draw();
 }catch(err){st.textContent=String(err);}
 };
 </script></body></html>
