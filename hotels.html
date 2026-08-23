@@ -10,13 +10,23 @@
 .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1000px 500px at 0% 0%,#1c4f7a,transparent 55%),radial-gradient(800px 400px at 100% 0%,#7a4a18,transparent 50%),#071018}
 .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
 .nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.nav a,.nav button{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
+.nav a,.nav button,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
 h1{margin:0 0 8px;font-size:36px}p.lead{color:#b7c6d6;margin:0 0 18px}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:16px;box-shadow:0 24px 50px rgba(0,0,0,.3)}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:16px}
 input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;padding:12px}td{padding:12px;border-top:1px solid rgba(255,255,255,.08)}
 .price{text-align:right;font-weight:700;color:#f3e0b8}
-@media print{body{background:#fff;color:#111}.bg,.nav{display:none} .card{box-shadow:none;border-color:#ddd}}
+.name{color:#f3e0b8;cursor:pointer;text-decoration:underline;text-underline-offset:3px;background:none;border:0;font:inherit;padding:0}
+.modal{display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.sheet{width:min(560px,100%);max-height:92vh;overflow:auto;background:#0d1a28;border:1px solid rgba(255,255,255,.14);border-radius:22px}
+.sheet img{width:100%;height:220px;object-fit:cover;display:block;background:#123}
+.pad{padding:18px}.pad h2{margin:0 0 8px}.meta{color:#b7c6d6;margin:6px 0;font-size:15px}
+.prices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.box{padding:12px;border-radius:14px;background:rgba(255,255,255,.05)}
+.box b{display:block;color:#d4b483;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.box span{font-size:22px;font-weight:800;color:#f3e0b8}
+@media print{body{background:#fff;color:#111}.bg,.nav,.modal{display:none!important}.card{box-shadow:none}}
 </style>
 </head>
 <body>
@@ -24,16 +34,55 @@ table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;lett
 <div class="wrap">
 <div class="nav"><a href="index.html">Маршруты</a><button type="button" onclick="window.print()">Печать / PDF</button></div>
 <h1>Гостиницы</h1>
-<p class="lead">Название, адрес и сумма для отчёта по командировке.</p>
+<p class="lead">Нажми на название — карточка с фото, адресом, телефоном и ценами.</p>
 <div class="card" style="margin-bottom:14px"><input id="q" placeholder="Поиск: Бийск, Омск, Уют…"></div>
 <div class="card" style="padding:6px 8px 10px"><table><thead><tr><th>Название</th><th>Адрес</th><th class="price">Отчёт, ₽</th></tr></thead><tbody id="tb"></tbody></table></div>
 </div>
+<div class="modal" id="m" onclick="if(event.target===this)this.classList.remove('show')">
+<div class="sheet">
+<img id="hp" alt="">
+<div class="pad">
+<h2 id="hn"></h2>
+<p class="meta" id="ha"></p>
+<p class="meta" id="ht"></p>
+<div class="prices">
+<div class="box"><b>В отчёт</b><span id="hrep"></span></div>
+<div class="box"><b>Проживание</b><span id="hstay"></span></div>
+</div>
+<div class="row" style="margin-top:16px"><button class="btn" type="button" onclick="document.getElementById('m').classList.remove('show')">Закрыть</button></div>
+</div>
+</div>
+</div>
 <script>
-function rub(n){return Number(n).toLocaleString("ru-RU");}
+var PHOTOS=[
+"https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=60",
+"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=900&q=60",
+"https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=900&q=60",
+"https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=60",
+"https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=60"
+];
+function rub(n){return Number(n||0).toLocaleString("ru-RU")+" ₽";}
+function stay(h){return h.s||h.p;}
+function phone(h){return h.t||"телефон уточнить на месте";}
+function addr(h){return h.a||"адрес в базе не указан · "+h.n;}
+function openHotel(i){
+var h=(window.HOTELS||[])[i]; if(!h) return;
+document.getElementById("hn").textContent=h.n;
+document.getElementById("ha").textContent="Адрес: "+addr(h);
+document.getElementById("ht").innerHTML=h.t?("Телефон: <a href='tel:"+h.t+"' style='color:#f3e0b8'>"+h.t+"</a>"):("Телефон: "+phone(h));
+document.getElementById("hrep").textContent=rub(h.p);
+document.getElementById("hstay").textContent=rub(stay(h));
+document.getElementById("hp").src=h.img||PHOTOS[i%PHOTOS.length];
+document.getElementById("m").classList.add("show");
+}
 function draw(){
 var q=(document.getElementById("q").value||"").toLowerCase();
-var rows=(window.HOTELS||[]).filter(function(h){return !(q)|| (h.n+" "+(h.a||"")).toLowerCase().indexOf(q)>=0;});
-document.getElementById("tb").innerHTML=rows.map(function(h){return "<tr><td>"+h.n+"</td><td>"+(h.a||"—")+"</td><td class='price'>"+rub(h.p)+"</td></tr>";}).join("")||"<tr><td colspan='3'>Нет совпадений</td></tr>";
+var html="";
+(window.HOTELS||[]).forEach(function(h,i){
+if(q && (h.n+" "+(h.a||"")).toLowerCase().indexOf(q)<0) return;
+html+="<tr><td><button class='name' type='button' onclick='openHotel("+i+")'>"+h.n+"</button></td><td>"+(h.a||"—")+"</td><td class='price'>"+Number(h.p).toLocaleString("ru-RU")+"</td></tr>";
+});
+document.getElementById("tb").innerHTML=html||"<tr><td colspan='3'>Нет совпадений</td></tr>";
 }
 document.getElementById("q").oninput=draw;draw();
 </script>
