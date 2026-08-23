@@ -2,15 +2,18 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Командировки v11</title>
+<title>Командировки v12</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>body{font-family:system-ui,sans-serif}.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}</style>
 </head>
 <body class="bg-slate-100 min-h-screen">
-<header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5">
-<div class="text-xs tracking-widest text-blue-200">ПРОВЕРКА МЕСТ РЖД · БЕЗ ПОКУПКИ</div>
-<h1 class="text-2xl font-semibold">Маршруты · v11</h1>
-<p class="text-sm text-blue-100">Нижние и одно купе — из кассы РЖД через облако РФ</p>
+<header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5 flex justify-between items-end gap-3">
+<div>
+<div class="text-xs tracking-widest text-blue-200">МУЛЬТИМАРШРУТ · FRANKFURT</div>
+<h1 class="text-2xl font-semibold">Маршруты · v12</h1>
+<p class="text-sm text-blue-100">Рейсы Яндекс · места РЖД с Европы</p>
+</div>
+<a class="text-sm bg-white/15 px-3 py-2 rounded-lg" href="hotels.html">Гостиницы</a>
 </div></header>
 <main class="max-w-5xl mx-auto px-4 py-6">
 <form id="f" class="bg-white rounded-2xl border p-5 space-y-3">
@@ -23,14 +26,14 @@
 <select id="pax" class="px-3 py-3 border rounded-xl"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
 <select id="xfer" class="px-3 py-3 border rounded-xl"><option value="any">Все рейсы</option><option value="direct">Только прямые</option></select>
 </div>
-<label class="text-sm flex gap-2 items-center"><input type="checkbox" id="need" checked> только где подходят нижние в одном купе</label>
-<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Проверить места</button>
+<label class="text-sm flex gap-2 items-center"><input type="checkbox" id="need"> только где подходят нижние в купе</label>
+<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Найти</button>
 <p id="st" class="text-sm text-slate-500"></p>
 </form>
 <div id="list" class="mt-5 space-y-3"></div>
 </main>
 <script>
-var API="https://multimodal-routes.onrender.com";
+var API="https://multimodal-routes-eu.onrender.com";
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("when").value=t.toISOString().slice(0,10);}catch(e){}
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 function badge(v,yes,no,unk){
@@ -45,17 +48,17 @@ var to=document.getElementById("dest").value.trim();
 var date=document.getElementById("when").value;
 var pax=+document.getElementById("pax").value;
 var st=document.getElementById("st"), box=document.getElementById("list");
-st.textContent="Спрашиваем РЖД в облаке… может занять до минуты."; box.innerHTML="";
+st.textContent="Ищём во Франкфурте… первый раз после деплоя до минуты."; box.innerHTML="";
 try{
 var j=await (await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
 var trains=j.trains||[];
 if(document.getElementById("xfer").value==="direct") trains=trains.filter(function(x){return !x.has_transfers;});
-if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true || (r.lower_enough===true && pax===1);});
-st.textContent="Рейсов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД поездов с местами: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Нет вариантов по фильтру или облако ещё без нового метода мест. Сними галочку и посмотри строку РЖД. В контейнере нужен RZD_AVAILABILITY_ENABLED=true и новый образ.</div>";return;}
+if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true || r.lower_enough===true;});
+st.textContent="Рейсов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД поездов: "+(j.rzd_trains||0)));
+if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Пусто. Сними галочку или подожди Live у multimodal-routes-eu.</div>";return;}
 box.innerHTML=trains.map(function(x,i){
 var r=x.rzd||{};
-return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+" · "+(x.number||"")+"</div><p class='font-medium mt-1'>"+fmt(x.dep)+" → "+fmt(x.arr)+" · "+(x.from||fr)+" — "+(x.to||to)+"</p><div class='flex flex-wrap gap-2 mt-3'>"+badge(r.same_coupe_lower,"одно купе + нижние: есть","одно купе на нижних: нет","купе не подтверждено")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"<span class='text-xs text-slate-500'>нижних: "+(r.lower==null?"?":r.lower)+", всего мест: "+(r.available==null?"?":r.available)+"</span></div></article>";
+return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+" · "+(x.number||"")+" "+(x.name||"")+"</div><p class='font-medium mt-1'>"+fmt(x.dep)+" → "+fmt(x.arr)+" · "+(x.from||fr)+" — "+(x.to||to)+"</p><div class='flex flex-wrap gap-2 mt-3'>"+badge(r.same_coupe_lower,"купе + нижние: хватает","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"<span class='text-xs text-slate-500'>нижних: "+(r.lower==null?"?":r.lower)+", мест: "+(r.available==null?"?":r.available)+"</span></div></article>";
 }).join("");
 }catch(err){st.textContent=String(err);}
 };
