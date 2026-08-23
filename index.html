@@ -2,44 +2,87 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Командировки v12</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>body{font-family:system-ui,sans-serif}.top{background:linear-gradient(135deg,#0f2744,#1d4e89)}</style>
+<title>МультиМаршрут</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#08111d;--gold:#d4b483;--gold2:#f3e0b8}
+*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018;min-height:100vh}
+.bg{position:fixed;inset:0;z-index:0;background:
+radial-gradient(1200px 600px at 10% -10%,#1c4f7a 0%,transparent 55%),
+radial-gradient(900px 500px at 100% 0%,#7a4a18 0%,transparent 50%),
+linear-gradient(165deg,#05080d 0%,#0c1a2b 48%,#122033 100%)}
+.bg:after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:48px 48px;opacity:.25}
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.brand{display:flex;gap:12px;align-items:center}
+.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d7a0,#b8893a 55%,#6d4a16);box-shadow:0 10px 24px rgba(184,137,58,.35),inset 0 1px 0 rgba(255,255,255,.5);display:grid;place-items:center;font-weight:800;color:#2a1a05}
+.brand b{display:block;letter-spacing:.18em;font-size:11px;color:#d4b483}
+.brand span{font-size:13px;color:#9fb0c3}
+.nav a{color:#f3e0b8;text-decoration:none;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18)}
+.hero h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:0 0 10px;font-weight:800;letter-spacing:-.03em}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8 50%,#c9974a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:0 0 22px;color:#b7c6d6;max-width:36em}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:22px;box-shadow:0 30px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18);backdrop-filter:blur(16px)}
+.grid2{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
+label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;margin-bottom:6px}
+input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.check{font-size:14px;color:#d5deea}
+button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);box-shadow:0 12px 24px rgba(201,151,74,.35),inset 0 1px 0 #fff}
+#st{margin:12px 0 0;color:#9fb0c3;font-size:14px}
+.list{margin-top:18px;display:grid;gap:12px}
+.trip{position:relative;overflow:hidden;padding:18px 18px 16px}
+.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
+.meta{font-size:12px;color:#9fb0c3;letter-spacing:.04em}
+.when{font-size:18px;font-weight:700;margin:6px 0 8px}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.b{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.ok{background:rgba(46,160,110,.18);color:#b8f0d3;border-color:rgba(46,160,110,.28)}
+.no{background:rgba(180,60,60,.16);color:#f3b4b4;border-color:rgba(180,60,60,.28)}
+.muted{color:#8ea0b3}
+.warn{padding:16px;border-radius:16px;background:rgba(212,180,131,.1);border:1px solid rgba(212,180,131,.22)}
+</style>
 </head>
-<body class="bg-slate-100 min-h-screen">
-<header class="top text-white"><div class="max-w-5xl mx-auto px-4 py-5 flex justify-between items-end gap-3">
-<div>
-<div class="text-xs tracking-widest text-blue-200">МУЛЬТИМАРШРУТ · FRANKFURT</div>
-<h1 class="text-2xl font-semibold">Маршруты · v12</h1>
-<p class="text-sm text-blue-100">Рейсы Яндекс · места РЖД с Европы</p>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+<div class="nav">
+<div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>командировки · поезда · автобусы</span></div></div>
+<a href="hotels.html">Гостиницы</a>
 </div>
-<a class="text-sm bg-white/15 px-3 py-2 rounded-lg" href="hotels.html">Гостиницы</a>
-</div></header>
-<main class="max-w-5xl mx-auto px-4 py-6">
-<form id="f" class="bg-white rounded-2xl border p-5 space-y-3">
-<div class="grid md:grid-cols-2 gap-3">
-<input id="orig" class="px-3 py-3 border rounded-xl" required value="Казань" placeholder="Откуда">
-<input id="dest" class="px-3 py-3 border rounded-xl" required value="Екатеринбург" placeholder="Куда">
+<section class="hero">
+<h1>Собрать путь<br><em>без сюрпризов по местам</em></h1>
+<p>Расписание живое. Нижние полки и купе — если касса РЖД отвечает с Франкфурта.</p>
+</section>
+<form id="f" class="card">
+<div class="grid2">
+<div><label class="l">Откуда</label><input id="orig" required value="Казань"></div>
+<div><label class="l">Куда</label><input id="dest" required value="Екатеринбург"></div>
 </div>
-<div class="grid sm:grid-cols-3 gap-3">
-<input type="date" id="when" class="px-3 py-3 border rounded-xl" required>
-<select id="pax" class="px-3 py-3 border rounded-xl"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
-<select id="xfer" class="px-3 py-3 border rounded-xl"><option value="any">Все рейсы</option><option value="direct">Только прямые</option></select>
+<div class="grid3" style="margin-top:12px">
+<div><label class="l">Дата</label><input type="date" id="when" required></div>
+<div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+<div><label class="l">Рейсы</label><select id="xfer"><option value="any">Все</option><option value="direct">Только прямые</option></select></div>
 </div>
-<label class="text-sm flex gap-2 items-center"><input type="checkbox" id="need"> только где подходят нижние в купе</label>
-<button class="px-6 py-3 bg-blue-800 text-white rounded-xl font-semibold">Найти</button>
-<p id="st" class="text-sm text-slate-500"></p>
+<div class="row">
+<label class="check"><input type="checkbox" id="need"> только купе + нижние</label>
+<button class="go" type="submit">Найти маршрут</button>
+</div>
+<p id="st"></p>
 </form>
-<div id="list" class="mt-5 space-y-3"></div>
-</main>
+<div id="list" class="list"></div>
+</div>
 <script>
 var API="https://multimodal-routes-eu.onrender.com";
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("when").value=t.toISOString().slice(0,10);}catch(e){}
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 function badge(v,yes,no,unk){
-if(v===true) return "<span class='px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs'>"+yes+"</span>";
-if(v===false) return "<span class='px-2 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs'>"+no+"</span>";
-return "<span class='px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-xs'>"+unk+"</span>";
+if(v===true) return "<span class='b ok'>"+yes+"</span>";
+if(v===false) return "<span class='b no'>"+no+"</span>";
+return "<span class='b muted'>"+unk+"</span>";
 }
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
@@ -48,18 +91,19 @@ var to=document.getElementById("dest").value.trim();
 var date=document.getElementById("when").value;
 var pax=+document.getElementById("pax").value;
 var st=document.getElementById("st"), box=document.getElementById("list");
-st.textContent="Ищём во Франкфурте… первый раз после деплоя до минуты."; box.innerHTML="";
+st.textContent="Ищем…"; box.innerHTML="";
 try{
 var j=await (await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
 var trains=j.trains||[];
 if(document.getElementById("xfer").value==="direct") trains=trains.filter(function(x){return !x.has_transfers;});
 if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true || r.lower_enough===true;});
-st.textContent="Рейсов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД поездов: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='bg-amber-50 border rounded-xl p-4'>Пусто. Сними галочку или подожди Live у multimodal-routes-eu.</div>";return;}
+st.textContent="Вариантов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД: "+(j.rzd_trains||0)));
+if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Сними фильтр или подожди деплой multimodal-routes-eu.</div>";return;}
 box.innerHTML=trains.map(function(x,i){
 var r=x.rzd||{};
-return "<article class='bg-white border rounded-2xl p-4'><div class='text-xs text-slate-500'>Вариант "+(i+1)+" · "+(x.number||"")+" "+(x.name||"")+"</div><p class='font-medium mt-1'>"+fmt(x.dep)+" → "+fmt(x.arr)+" · "+(x.from||fr)+" — "+(x.to||to)+"</p><div class='flex flex-wrap gap-2 mt-3'>"+badge(r.same_coupe_lower,"купе + нижние: хватает","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"<span class='text-xs text-slate-500'>нижних: "+(r.lower==null?"?":r.lower)+", мест: "+(r.available==null?"?":r.available)+"</span></div></article>";
+return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.number||"")+" "+(x.name||"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div><div class='meta'>"+(x.from||fr)+" — "+(x.to||to)+"</div><div class='badges' style='margin-top:10px'>"+badge(r.same_coupe_lower,"купе + нижние","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"<span class='b'>нижних "+(r.lower==null?"?":r.lower)+" · мест "+(r.available==null?"?":r.available)+"</span></div></article>";
 }).join("");
 }catch(err){st.textContent=String(err);}
 };
-</script></body></html>
+</script>
+</body></html>
