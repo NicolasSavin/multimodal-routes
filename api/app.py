@@ -8,8 +8,14 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-YC = "https://bba1p30liradr6hj8olf.containers.yandexcloud.net"
 YKEY = os.environ.get("YANDEX_RASP_KEY") or os.environ.get("YANDEX_RASP_API_KEY") or ""
+RZD = "https://ticket.rzd.ru"
+RZD_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://ticket.rzd.ru/",
+    "Origin": "https://ticket.rzd.ru",
+}
 
 
 def yandex_code(q):
@@ -72,13 +78,65 @@ def yandex_search(fr, to, date):
     return out, data.get("error") or "ok"
 
 
+def rzd_code(q):
+    data = requests.get(
+        RZD + "/isdk/suggests",
+        params={"Query": q, "TransportType": "rail", "GroupResults": "true", "Language": "ru"},
+        headers=RZD_HEADERS,
+        timeout=8,
+    ).json()
+    for n in data.get("transport_node_suggests") or []:
+        codes = n.get("Codes") or n.get("codes") or {}
+        code = codes.get("Railway") or codes.get("railway") or n.get("code")
+        if code:
+            return str(code), n.get("Name") or n.get("name") or q
+    raise ValueError("RZD station not found: " + q)
+
+
 def rzd_seats(fr, to, date, pax):
-    r = requests.get(
-        YC + "/api/v1/seats/rzd",
-        params={"origin": fr, "destination": to, "date": date, "passengers": pax},
-        timeout=35,
-    )
-    return r.json()
+    o_code, _ = rzd_code(fr)
+    d_code, _ = rzd_code(to)
+    data = requests.get(
+        RZD + "/api/v1/railway-service/prices/train-pricing",
+        params={
+            "service_provider": "B2B_RZD",
+            "origin": o_code,
+            "destination": d_code,
+            "departureDate": date + "T00:00:00",
+            "adultPassengersQuantity": pax,
+            "childrenPassengersQuantity": 0,
+            "getTrainsFromSchedule": "true",
+            "carGrouping": "Group",
+            "specialPlacesDemand": "StandardPlacesAndForDisabledPersons",
+            "carIssuingType": "Passenger",
+            "getByLocalTime": "true",
+        },
+        headers=RZD_HEADERS,
+        timeout=12,
+    ).json()
+    out = {}
+    for t in data.get("Trains") or data.get("trains") or []:
+        num = t.get("TrainNumber") or t.get("trainNumber")
+        lower = avail = 0
+        coupe_lower = 0
+        for g in t.get("CarGroups") or t.get("carGroups") or []:
+            places = int(g.get("TotalPlaceQuantity") or g.get("PlaceQuantity") or 0)
+            low = g.get("LowerPlaceQuantity")
+            low_n = int(low) if low is not None else 0
+            avail += places
+            lower += low_n
+            typ = str(g.get("CarTypeName") or g.get("CarType") or "").lower()
+            if "купе" in typ or typ in {"coupe", "compartment", "куп"}:
+                coupe_lower += low_n
+        out[_norm(num)] = {
+            "number": num,
+            "available": avail,
+            "lower": lower,
+            "lower_enough": lower >= pax,
+            "same_coupe_lower": coupe_lower >= pax,
+            "same_coupe": coupe_lower >= pax,
+        }
+    return {"ok": True, "trains": list(out.values()), "map": out}
 
 
 def _norm(n):
@@ -87,7 +145,7 @@ def _norm(n):
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY)})
+    return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY), "region": "eu"})
 
 
 @app.get("/trains")
@@ -104,14 +162,12 @@ def trains():
         trains_out, status = yandex_search(origin, dest, date)
     except Exception as e:
         err = str(e)
-    seats = {}
-    seats_err = None
+    seats, seats_err = {}, None
     try:
         raw = rzd_seats(origin, dest, date, pax)
+        seats = raw.get("map") or {}
         if not raw.get("ok"):
-            seats_err = raw.get("error") or raw.get("error_type")
-        for t in raw.get("trains") or []:
-            seats[_norm(t.get("number"))] = t
+            seats_err = raw.get("error")
     except Exception as e:
         seats_err = str(e)
     for item in trains_out:
@@ -120,7 +176,7 @@ def trains():
             item["rzd"] = hit
     return jsonify(
         {
-            "source": "yandex-rasp+rzd" if trains_out else "error",
+            "source": "yandex-rasp+rzd",
             "from": origin,
             "to": dest,
             "trains": trains_out,
