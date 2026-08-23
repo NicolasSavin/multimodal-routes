@@ -27,7 +27,8 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 .sug button:hover{background:rgba(255,255,255,.08)}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
 .check{font-size:14px;color:#d5deea}button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);box-shadow:0 12px 24px rgba(201,151,74,.35)}
-.more{margin:8px auto 0;display:none;border:1px solid rgba(243,224,184,.3);background:transparent;color:#f3e0b8;padding:12px 18px;border-radius:999px;cursor:pointer;font:inherit}
+.more,.mapbtn{margin:8px auto 0;border:1px solid rgba(243,224,184,.3);background:transparent;color:#f3e0b8;padding:10px 16px;border-radius:999px;cursor:pointer;font:inherit}
+.more{display:none}
 #st{margin:12px 0 0;color:#9fb0c3;font-size:14px}.list{margin-top:18px;display:grid;gap:12px}
 .trip{position:relative;overflow:hidden}.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
 .meta{font-size:12px;color:#9fb0c3}.when{font-size:18px;font-weight:700;margin:6px 0 8px}
@@ -38,17 +39,27 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 .ok{background:rgba(46,160,110,.18);color:#b8f0d3}.no{background:rgba(180,60,60,.16);color:#f3b4b4}.muted{color:#8ea0b3}
 .sap{background:rgba(80,140,220,.22);color:#cfe4ff}
 .warn{padding:16px;border-radius:16px;background:rgba(212,180,131,.1)}
+.modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.sheet{max-width:560px;width:100%;background:#0d1a28;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:20px}
+.coupe{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.box{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
+.box b{display:block;font-size:12px;color:#d4b483;margin-bottom:8px}
+.seats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seat{padding:8px;border-radius:8px;text-align:center;font-size:12px;background:rgba(255,255,255,.06)}
+.seat.low{background:rgba(46,160,110,.28)}
+.seat.up{background:rgba(255,255,255,.08);color:#9fb0c3}
 </style>
 </head>
 <body>
 <div class="bg"></div>
 <div class="wrap">
 <div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · сапсан</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>с понятной пересадкой</em></h1><p>Сапсан помечается отдельно. Сначала 5 рейсов, дальше — «Показать ещё».</p></section>
+<section class="hero"><h1>Поезд плюс автобус<br><em>с понятной пересадкой</em></h1><p>Фильтры купе/нижних — по данным РЖД. Схема купе — типовая, нижние нечётные.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
-<div class="field"><label class="l">Откуда</label><input id="orig" required value="Москва"><div class="sug" id="sug-orig"></div></div>
-<div class="field"><label class="l">Куда</label><input id="dest" required value="Санкт-Петербург"><div class="sug" id="sug-dest"></div></div>
+<div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
+<div class="field"><label class="l">Куда</label><input id="dest" required value="Екатеринбург"><div class="sug" id="sug-dest"></div></div>
 </div>
 <div class="grid3" style="margin-top:12px"><div><label class="l">Дата</label><input type="date" id="when" required></div><div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label class="l">Что показать</label><select id="xfer"><option value="any">Все</option><option value="sapsan">Только Сапсан / Ласточка</option><option value="mix">Только поезд+автобус</option><option value="direct">Только прямые</option></select></div></div>
 <div class="row">
@@ -60,6 +71,9 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 </form>
 <div id="list" class="list"></div>
 <button class="more" id="more" type="button">Показать ещё</button>
+</div>
+<div class="modal" id="seatModal" onclick="if(event.target===this)this.classList.remove('show')">
+<div class="sheet"><div class="row" style="margin:0 0 8px;justify-content:space-between"><b id="seatTitle">Схема купе</b><button class="mapbtn" type="button" onclick="document.getElementById('seatModal').classList.remove('show')">Закрыть</button></div><p class="meta" id="seatNote"></p><div class="coupe" id="seatGrid"></div></div>
 </div>
 <script>
 var API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
@@ -103,7 +117,19 @@ return d.map(function(p,i){return "<div class='step'><span class='kind'>"+(i+1)+
 }
 function card(x,i){
 var r=x.rzd||{}, sap=isSap(x);
-return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||kind(x.type,x))+(sap?" · Сапсан/Ласточка":"")+(x.type==="mixed"?" · поезд + автобус":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан · сидячие</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough||r.same_coupe_lower,"нижние есть","нижних мало","нижние: нет данных")+"</div></article>";
+return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||kind(x.type,x))+(sap?" · Сапсан/Ласточка":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан · сидячие</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough||r.same_coupe_lower,"нижние есть","нижних мало","нижние: нет данных")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Схема купе</button></article>";
+}
+function openMap(i){
+var x=cache[i]||{}, r=x.rzd||{};
+var html="";
+for(var k=0;k<4;k++){
+var n=k*4;
+html+="<div class='box'><b>Купе "+(k+1)+"</b><div class='seats'><div class='seat low'>ниж "+(n+1)+"</div><div class='seat up'>верх "+(n+2)+"</div><div class='seat low'>ниж "+(n+3)+"</div><div class='seat up'>верх "+(n+4)+"</div></div></div>";
+}
+document.getElementById("seatTitle").textContent="Схема купе · "+(x.number||x.name||"поезд");
+document.getElementById("seatNote").textContent=(r.same_coupe_lower?"По РЖД: можно взять нижние в одном купе. ":"")+"Зелёные — нижние (нечётные). Это типовая схема вагона, не живая карта конкретных номеров кассы.";
+document.getElementById("seatGrid").innerHTML=html;
+document.getElementById("seatModal").classList.add("show");
 }
 function draw(){
 var box=document.getElementById("list"), btn=document.getElementById("more");
@@ -127,7 +153,7 @@ var hasSeat=trains.some(function(x){return x.rzd;});
 if((coupe||lower) && hasSeat) trains=trains.filter(function(x){return isSap(x) || okSeat(x.rzd||{}, coupe, lower)===true;});
 cache=trains;
 st.textContent="Вариантов: "+trains.length+" · Сапсан/Ласточка: "+trains.filter(isSap).length+(j.rzd_error?" · места РЖД нет":(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Для Сапсана возьми Москва — Санкт-Петербург или Нижний Новгород. Сними галочки купе, у Сапсана мест сидячие.</div>";return;}
+if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Сними галочки или смени дату.</div>";return;}
 draw();
 }catch(err){st.textContent=String(err);}
 };
