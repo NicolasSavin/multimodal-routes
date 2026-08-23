@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime, timedelta
 
 import requests
 from flask import Flask, jsonify, request
@@ -20,6 +21,22 @@ RZD_HEADERS = {
     "Referer": "https://ticket.rzd.ru/",
 }
 
+HUBS = {
+    "ижевск": ["Агрыз", "Екатеринбург", "Казань"],
+    "агрыз": ["Екатеринбург", "Новосибирск", "Казань"],
+    "барнаул": ["Новосибирск", "Екатеринбург"],
+}
+DEFAULT_HUBS = ["Екатеринбург", "Новосибирск", "Казань"]
+
+
+def parse_dt(s):
+    if not s:
+        return None
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
 
 def yandex_code(q):
     d = requests.get(
@@ -28,25 +45,19 @@ def yandex_code(q):
         timeout=(3, 6),
     ).json()
     rows = (d or [None, []])[1] or []
-    city = None
-    station = None
+    city = station = None
     for row in rows:
         if not row:
             continue
-        code = str(row[0])
-        title = row[1]
+        code, title = str(row[0]), row[1]
         if code.startswith("c") and city is None:
             city = (code, title)
         if code.startswith("s") and station is None:
             station = (code, title)
-    if city:
-        return city
-    if station:
-        return station
-    return None, q
+    return city or station or (None, q)
 
 
-def yandex_search(fr, to, date):
+def yandex_search(fr, to, date, limit=20):
     if not YKEY:
         return [], "no_key"
     a, an = yandex_code(fr)
@@ -61,11 +72,11 @@ def yandex_search(fr, to, date):
             "to": b,
             "date": date,
             "lang": "ru_RU",
-            "limit": 40,
+            "limit": limit,
             "transport_types": "train,bus",
             "transfers": "yes",
         },
-        timeout=(3, 12),
+        timeout=(3, 10),
     ).json()
     out = []
     for s in data.get("segments") or []:
@@ -89,20 +100,122 @@ def yandex_search(fr, to, date):
             )
         types = {d.get("type") for d in details}
         mixed = "train" in types and "bus" in types
-        out.append(
-            {
-                "number": th.get("number"),
-                "name": th.get("title"),
-                "type": "mixed" if mixed else (th.get("transport_type") or "train"),
-                "from": (s.get("from") or {}).get("title") or an,
-                "to": (s.get("to") or {}).get("title") or bn,
-                "dep": s.get("departure"),
-                "arr": s.get("arrival"),
-                "has_transfers": bool(s.get("has_transfers")) or len(details) > 1,
-                "details": details,
-            }
-        )
+        item = {
+            "number": th.get("number"),
+            "name": th.get("title"),
+            "type": "mixed" if mixed else (th.get("transport_type") or "train"),
+            "from": (s.get("from") or {}).get("title") or an,
+            "to": (s.get("to") or {}).get("title") or bn,
+            "dep": s.get("departure"),
+            "arr": s.get("arrival"),
+            "has_transfers": bool(s.get("has_transfers")) or len(details) > 1,
+            "details": details,
+        }
+        out.append(item)
     return out, data.get("error") or "ok"
+
+
+def pick_hubs(origin, dest):
+    o = origin.lower()
+    d = dest.lower()
+    names = []
+    for key, hubs in HUBS.items():
+        if key in o or key in d:
+            names.extend(hubs)
+    names.extend(DEFAULT_HUBS)
+    seen = set()
+    out = []
+    for n in names:
+        low = n.lower()
+        if low in o or low in d or low in seen:
+            continue
+        seen.add(low)
+        out.append(n)
+        if len(out) == 3:
+            break
+    return out
+
+
+def stitch(leg1, leg2, hub):
+    a = parse_dt(leg1.get("arr"))
+    b = parse_dt(leg2.get("dep"))
+    if not a or not b:
+        return None
+    wait = int((b - a).total_seconds() / 60)
+    if wait < 35 or wait > 16 * 60:
+        return None
+    d1 = leg1.get("details") or [
+        {
+            "number": leg1.get("number"),
+            "type": leg1.get("type"),
+            "from": leg1.get("from"),
+            "to": leg1.get("to"),
+            "dep": leg1.get("dep"),
+            "arr": leg1.get("arr"),
+        }
+    ]
+    d2 = leg2.get("details") or [
+        {
+            "number": leg2.get("number"),
+            "type": leg2.get("type"),
+            "from": leg2.get("from"),
+            "to": leg2.get("to"),
+            "dep": leg2.get("dep"),
+            "arr": leg2.get("arr"),
+        }
+    ]
+    details = d1 + d2
+    types = {x.get("type") for x in details}
+    mixed = "train" in types and "bus" in types
+    return {
+        "number": (leg1.get("number") or "") + "+" + (leg2.get("number") or ""),
+        "name": (leg1.get("name") or kind_name(leg1)) + " + " + (leg2.get("name") or kind_name(leg2)),
+        "type": "mixed" if mixed else "train",
+        "from": leg1.get("from"),
+        "to": leg2.get("to"),
+        "dep": leg1.get("dep"),
+        "arr": leg2.get("arr"),
+        "has_transfers": True,
+        "hub": hub,
+        "wait_min": wait,
+        "details": details,
+    }
+
+
+def kind_name(x):
+    return x.get("number") or x.get("type") or "рейс"
+
+
+def compose(origin, dest, date):
+    direct, status = yandex_search(origin, dest, date, 25)
+    extra = []
+    for hub in pick_hubs(origin, dest):
+        a, _ = yandex_search(origin, hub, date, 8)
+        b, _ = yandex_search(hub, dest, date, 8)
+        # next calendar day for late arrivals
+        try:
+            nxt = (datetime.fromisoformat(date) + timedelta(days=1)).date().isoformat()
+            b2, _ = yandex_search(hub, dest, nxt, 6)
+            b = b + b2
+        except Exception:
+            pass
+        for x in a[:6]:
+            for y in b[:6]:
+                item = stitch(x, y, hub)
+                if item:
+                    extra.append(item)
+    extra.sort(key=lambda z: z.get("dep") or "")
+    seen = set()
+    uniq = []
+    for z in extra:
+        key = (z.get("dep"), z.get("arr"), z.get("hub"), z.get("number"))
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(z)
+        if len(uniq) >= 12:
+            break
+    return direct + uniq, status
 
 
 def rzd_code(q):
@@ -168,15 +281,7 @@ def rzd_seats(fr, to, date, pax):
 
 @app.get("/health")
 def health():
-    return jsonify(
-        {
-            "ok": True,
-            "ts": int(time.time()),
-            "yandex": bool(YKEY),
-            "rzd_enabled": RZD_ON,
-            "region": "yc",
-        }
-    )
+    return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY), "rzd_enabled": RZD_ON, "compose": True})
 
 
 @app.get("/suggest")
@@ -189,8 +294,7 @@ def suggest():
         params={"format": "old", "part": q},
         timeout=(2, 5),
     ).json()
-    out = []
-    seen = set()
+    out, seen = [], set()
     for row in (d or [None, []])[1] or []:
         if not row:
             continue
@@ -212,31 +316,25 @@ def trains():
     pax = int(request.args.get("adults") or request.args.get("pax") or 1)
     if not origin or not dest or not date:
         return jsonify({"error": "from, to, date"}), 400
-
     err = None
     trains_out, status = [], None
     try:
-        trains_out, status = yandex_search(origin, dest, date)
+        trains_out, status = compose(origin, dest, date)
     except Exception as e:
         err = str(e)
-
     seats, seats_err = {}, None
     if RZD_ON:
         try:
             seats = rzd_seats(origin, dest, date, pax)
         except Exception as e:
             seats_err = str(e)
-    else:
-        seats_err = "rzd_off"
-
     for item in trains_out:
         key = "".join(ch for ch in str(item.get("number") or "").upper() if ch.isalnum())
         if key in seats:
             item["rzd"] = seats[key]
-
     return jsonify(
         {
-            "source": "yandex-rasp",
+            "source": "yandex-rasp+hubs",
             "from": origin,
             "to": dest,
             "trains": trains_out,
