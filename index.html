@@ -37,13 +37,14 @@ label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:upperca
 .modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:16px}
 .modal.show{display:flex}.sheet{max-width:640px;width:100%;max-height:90vh;overflow:auto;background:#0d1a28;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:20px}
 .box{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}
-.seat{display:inline-block;margin:3px;padding:6px 8px;border-radius:8px;background:rgba(46,160,110,.25);font-size:12px}
+.seat{display:inline-block;margin:3px;padding:6px 8px;border-radius:8px;font-size:12px;background:rgba(255,255,255,.08)}
+.seat.low{background:rgba(46,160,110,.3);color:#b8f0d3}
 </style></head>
 <body>
 <div class="bg"></div>
 <div class="wrap">
 <div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>вагон · купе · места</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>схема мест по вагонам</em></h1><p>Кнопка «Схема купе» открывает вагоны и свободные места, если касса отдала.</p></section>
+<section class="hero"><h1>Поезд плюс автобус<br><em>схема мест по вагонам</em></h1><p>Нижние в купе — нечётные номера. Зелёные места — нижние.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
@@ -92,6 +93,15 @@ if(coupe) return r.same_coupe===true || r.same_coupe_lower===true;
 if(lower) return r.lower_enough===true || r.same_coupe_lower===true;
 return true;
 }
+function seatNums(val){
+var out=[]; String(Array.isArray(val)?val.join(","): (val||"")).split(/[^0-9]+/).forEach(function(x){ if(x) out.push(+x); }); return out;
+}
+function allSeats(c){
+var n=seatNums(c.free);
+(c.compartments||[]).forEach(function(k){ n=n.concat(seatNums(k.places||k.Places||k.freePlaces||k)); });
+return n;
+}
+function isLow(n){ return n%2===1; }
 function steps(x){
 var d=x.details||[];
 if(!d.length) return "<div class='step'><span class='kind'>"+kind(x.type,x)+"</span> "+(x.from||"")+" → "+(x.to||"")+"</div>";
@@ -113,20 +123,25 @@ var j=await (await fetch(API+"?path=/cars&from="+encodeURIComponent(lastQ.fr)+"&
 if(j.cars&&j.cars.length) cars=j.cars;
 }catch(e){}
 if(!cars.length){
-document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны. Нижних: "+(r.lower||"—")+", всего: "+(r.available||"—")+". Нижние в купе обычно нечётные: 1 и 3 в каждом купе.</p>";
+document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны.</p>";
 return;
 }
 document.getElementById("seatGrid").innerHTML=cars.map(function(c,n){
+var seats=allSeats(c);
+var low=seats.filter(isLow);
 var title=(c.car?("Вагон "+c.car+" · "):("Группа "+(n+1)+" · "))+(c.type||"");
-var seats=String(c.free||"");
 var comps=c.compartments||[];
 var compHtml="";
-if(comps && comps.length){
-compHtml=comps.map(function(k,i){var places=k.places||k.Places||k.freePlaces||k; return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+(Array.isArray(places)?places.join(", "):places)+"</div>";}).join("");
-} else if(seats){
-compHtml="<div class='meta'>Места: "+seats.split(/[,;]+/).map(function(s){return "<span class='seat'>"+s.trim()+"</span>";}).join("")+"</div>";
+if(comps.length){
+compHtml=comps.map(function(k,i){
+var places=seatNums(k.places||k.Places||k.freePlaces||k);
+var lows=places.filter(isLow);
+return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+places.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join(" ")+(lows.length?" · нижних "+lows.length:" · нижних нет")+"</div>";
+}).join("");
+} else if(seats.length){
+compHtml="<div class='meta'>"+seats.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join("")+"</div>";
 }
-return "<div class='box'><b>"+title+"</b><div class='meta'>свободно "+(c.available||"—")+" · нижних "+(c.lower||"—")+"</div>"+compHtml+"</div>";
+return "<div class='box'><b>"+title+"</b><div class='meta'>свободно "+(c.available||seats.length)+" · нижних "+low.length+(low.length?(" (№ "+low.join(", ")+")"):" нет")+"</div>"+compHtml+"</div>";
 }).join("");
 }
 function draw(){document.getElementById("list").innerHTML=cache.slice(0,shown).map(card).join(""); var btn=document.getElementById("more"); btn.style.display=shown<cache.length?"block":"none"; btn.textContent="Показать ещё ("+(cache.length-shown)+")";}
