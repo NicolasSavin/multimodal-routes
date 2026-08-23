@@ -3,38 +3,22 @@ from app import app
 
 def handler(event, context):
     method = event.get("httpMethod") or "GET"
-    path = event.get("path") or event.get("url") or "/"
-    if not path.startswith("/"):
+    params = dict(event.get("queryStringParameters") or {})
+    path = params.pop("path", None) or event.get("path") or "/"
+    if path in ("/", "", None):
+        path = "/health"
+    if not str(path).startswith("/"):
         path = "/" + path
-    params = event.get("queryStringParameters") or {}
-    query = "&".join(f"{k}={v}" for k, v in params.items() if v is not None)
+    query = "&".join(f"{k}={v}" for k, v in params.items() if v is not None and k != "path")
     url = path + (("?" + query) if query else "")
-
-    headers = {}
-    raw = event.get("headers") or {}
-    for key, val in raw.items():
-        if key.lower() not in {"host", "content-length"}:
-            headers[key] = val
-
-    body = event.get("body") or ""
-    if event.get("isBase64Encoded") and body:
-        import base64
-
-        body = base64.b64decode(body)
-
     if method == "OPTIONS":
         return {
             "statusCode": 204,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-                "Access-Control-Allow-Headers": "*",
-            },
+            "headers": {"Access-Control-Allow-Origin": "*"},
             "body": "",
         }
-
     client = app.test_client()
-    resp = client.open(url, method=method, data=body or None, headers=headers)
+    resp = client.open(url, method=method)
     return {
         "statusCode": resp.status_code,
         "headers": {
