@@ -45,7 +45,7 @@ a.map{color:#f3e0b8}
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУт</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
 <section class="hero"><h1>Поезд плюс автобус<br><em>если прямого нет — ищем с пересадкой</em></h1><p>В пересадке видно где вышли, куда идти и сколько ждать.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
@@ -142,20 +142,28 @@ return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" ·
 }
 async function openMap(i){
 var x=cache[i]||{}, r=x.rzd||{};
-document.getElementById("seatTitle").textContent="Вагоны · "+(x.number||x.name||"");
+document.getElementById("seatTitle").textContent="Места · "+(x.number||x.name||"");
 document.getElementById("seatGrid").innerHTML="<p class='meta'>Загружаю…</p>";
 document.getElementById("seatModal").classList.add("show");
 var cars=(r.groups||[]).slice();
 try{var j=await (await fetch(API+"?path=/cars&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&train="+encodeURIComponent(x.number||"")+"&dep="+encodeURIComponent(x.dep||"")+"&pax="+lastQ.pax)).json(); if(j.cars&&j.cars.length) cars=j.cars;}catch(e){}
-if(!cars.length){document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны.</p>";return;}
-document.getElementById("seatGrid").innerHTML=cars.map(function(c,n){
+if(!cars.length){document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны. Открой тот же поезд на rzd.ru — там схема по вагонам.</p>";return;}
+var html=cars.map(function(c,n){
 var seats=allSeats(c), low=seats.filter(isLow);
-var title=(c.car?("Вагон "+c.car+" · "):("Группа "+(n+1)+" · "))+(c.type||"");
-var comps=c.compartments||[], compHtml="";
-if(comps.length){compHtml=comps.map(function(k,i){var places=seatNums(k.places||k.Places||k.freePlaces||k), lows=places.filter(isLow); return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+places.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join(" ")+(lows.length?" · нижних "+lows.length:" · нижних нет")+"</div>";}).join("");}
-else if(seats.length){compHtml="<div class='meta'>"+seats.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join("")+"</div>";}
-return "<div class='box'><b>"+title+"</b><div class='meta'>свободно "+(c.available||seats.length)+" · нижних "+low.length+(low.length?(" (№ "+low.join(", ")+")"):" нет")+"</div>"+compHtml+"</div>";
+var hasMap=!!(c.car || seats.length || (c.compartments||[]).length);
+var title=hasMap?(c.car?("Вагон "+c.car+" · "):"")+(c.type||""):((c.type||"тип")+" · свободно "+(c.available||"—"));
+var body="";
+if((c.compartments||[]).length){
+body=(c.compartments||[]).map(function(k,i){var places=seatNums(k.places||k.Places||k.freePlaces||k), lows=places.filter(isLow); return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+places.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join(" ")+(lows.length?" · нижних "+lows.length:"")+"</div>";}).join("");
+} else if(seats.length){
+body="<div class='meta'>"+seats.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join("")+"</div>";
+} else {
+body="<div class='meta'>Номеров мест касса не отдала. Это тип мест, не схема вагона.</div>";
+}
+var foot=hasMap?("<div class='meta'>свободно "+(c.available||seats.length)+(low.length?(" · нижних "+low.length+" (№ "+low.join(", ")+")"):"")+"</div>"):"";
+return "<div class='box'><b>"+title+"</b>"+foot+body+"</div>";
 }).join("");
+document.getElementById("seatGrid").innerHTML="<p class='meta'>Если видите только «КУПЕ свободно N» — это тарифы кассы, не рисунок вагона.</p>"+html;
 }
 function byMode(list, mode){
 if(mode==="sapsan") return list.filter(isSap);
