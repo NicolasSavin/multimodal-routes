@@ -48,7 +48,7 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 <div id="list" class="list"></div>
 </div>
 <script>
-var API="https://multimodal-routes-eu.onrender.com";
+var API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("when").value=t.toISOString().slice(0,10);}catch(e){}
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 function kind(t){t=String(t||""); if(t.indexOf("bus")>=0||t.indexOf("авто")>=0) return "автобус"; if(t.indexOf("mix")>=0) return "связка"; return "поезд";}
@@ -63,13 +63,13 @@ e.preventDefault();
 var fr=document.getElementById("orig").value.trim(), to=document.getElementById("dest").value.trim(), date=document.getElementById("when").value, pax=+document.getElementById("pax").value;
 var st=document.getElementById("st"), box=document.getElementById("list"); st.textContent="Ищем прямые и поезд+автобус…"; box.innerHTML="";
 try{
-var j=await (await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
+var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
 var trains=j.trains||[]; var mode=document.getElementById("xfer").value;
 if(mode==="direct") trains=trains.filter(function(x){return !x.has_transfers && x.type!=="mixed";});
 if(mode==="mix") trains=trains.filter(function(x){return x.type==="mixed" || (x.details&&x.details.length>1);});
 if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true||r.lower_enough===true;});
 st.textContent="Вариантов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Выбери «Все» и подожди деплой EU (поезд+автобус в свежем коде).</div>";return;}
+if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Выбери «Все» или другую дату.</div>";return;}
 box.innerHTML=trains.map(function(x,i){var r=x.rzd||{}; return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||kind(x.type))+(x.type==="mixed"?" · поезд + автобус":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+badge(r.same_coupe_lower,"купе + нижние","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"</div></article>";}).join("");
 }catch(err){st.textContent=String(err);}
 };
