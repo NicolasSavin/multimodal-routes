@@ -3,74 +3,46 @@
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>МультиМаршрут</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#08111d;--gold:#d4b483;--gold2:#f3e0b8}
+:root{--gold:#d4b483}
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018;min-height:100vh}
-.bg{position:fixed;inset:0;z-index:0;background:
-radial-gradient(1200px 600px at 10% -10%,#1c4f7a 0%,transparent 55%),
-radial-gradient(900px 500px at 100% 0%,#7a4a18 0%,transparent 50%),
-linear-gradient(165deg,#05080d 0%,#0c1a2b 48%,#122033 100%)}
-.bg:after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:48px 48px;opacity:.25}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1200px 600px at 10% -10%,#1c4f7a 0%,transparent 55%),radial-gradient(900px 500px at 100% 0%,#7a4a18 0%,transparent 50%),linear-gradient(165deg,#05080d,#0c1a2b 48%,#122033)}
 .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
 .nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
-.brand{display:flex;gap:12px;align-items:center}
-.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d7a0,#b8893a 55%,#6d4a16);box-shadow:0 10px 24px rgba(184,137,58,.35),inset 0 1px 0 rgba(255,255,255,.5);display:grid;place-items:center;font-weight:800;color:#2a1a05}
-.brand b{display:block;letter-spacing:.18em;font-size:11px;color:#d4b483}
-.brand span{font-size:13px;color:#9fb0c3}
+.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d7a0,#b8893a);display:grid;place-items:center;font-weight:800;color:#2a1a05;box-shadow:0 10px 24px rgba(184,137,58,.35)}
+.brand{display:flex;gap:12px;align-items:center}.brand b{display:block;letter-spacing:.18em;font-size:11px;color:#d4b483}.brand span{font-size:13px;color:#9fb0c3}
 .nav a{color:#f3e0b8;text-decoration:none;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18)}
-.hero h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:0 0 10px;font-weight:800;letter-spacing:-.03em}
-.hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8 50%,#c9974a);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p{margin:0 0 22px;color:#b7c6d6;max-width:36em}
+.hero h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:0 0 10px;font-weight:800}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8,#c9974a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:0 0 22px;color:#b7c6d6}
 .card{background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:22px;box-shadow:0 30px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18);backdrop-filter:blur(16px)}
-.grid2{display:grid;gap:12px;grid-template-columns:1fr 1fr}
-.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
+.grid2{display:grid;gap:12px;grid-template-columns:1fr 1fr}.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
 @media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
 label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;margin-bottom:6px}
 input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
-.check{font-size:14px;color:#d5deea}
-button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);box-shadow:0 12px 24px rgba(201,151,74,.35),inset 0 1px 0 #fff}
-#st{margin:12px 0 0;color:#9fb0c3;font-size:14px}
-.list{margin-top:18px;display:grid;gap:12px}
-.trip{position:relative;overflow:hidden;padding:18px 18px 16px}
-.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
-.meta{font-size:12px;color:#9fb0c3;letter-spacing:.04em}
-.when{font-size:18px;font-weight:700;margin:6px 0 8px}
-.badges{display:flex;flex-wrap:wrap;gap:8px}
-.b{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
-.ok{background:rgba(46,160,110,.18);color:#b8f0d3;border-color:rgba(46,160,110,.28)}
-.no{background:rgba(180,60,60,.16);color:#f3b4b4;border-color:rgba(180,60,60,.28)}
-.muted{color:#8ea0b3}
-.warn{padding:16px;border-radius:16px;background:rgba(212,180,131,.1);border:1px solid rgba(212,180,131,.22)}
+.check{font-size:14px;color:#d5deea}button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);box-shadow:0 12px 24px rgba(201,151,74,.35)}
+#st{margin:12px 0 0;color:#9fb0c3;font-size:14px}.list{margin-top:18px;display:grid;gap:12px}
+.trip{position:relative;overflow:hidden}.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
+.meta{font-size:12px;color:#9fb0c3}.when{font-size:18px;font-weight:700;margin:6px 0 8px}
+.step{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);font-size:13px}
+.kind{display:inline-block;min-width:72px;color:#f3e0b8;font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.08em}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.b{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06)}
+.ok{background:rgba(46,160,110,.18);color:#b8f0d3}.no{background:rgba(180,60,60,.16);color:#f3b4b4}.muted{color:#8ea0b3}
+.warn{padding:16px;border-radius:16px;background:rgba(212,180,131,.1)}
 </style>
 </head>
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav">
-<div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>командировки · поезда · автобусы</span></div></div>
-<a href="hotels.html">Гостиницы</a>
-</div>
-<section class="hero">
-<h1>Собрать путь<br><em>без сюрпризов по местам</em></h1>
-<p>Расписание живое. Нижние полки и купе — если касса РЖД отвечает с Франкфурта.</p>
-</section>
+<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<section class="hero"><h1>Поезд плюс автобус<br><em>с понятной пересадкой</em></h1><p>Прямые рейсы и связки через крупные узлы. Места в купе — если касса РЖД отвечает.</p></section>
 <form id="f" class="card">
-<div class="grid2">
-<div><label class="l">Откуда</label><input id="orig" required value="Казань"></div>
-<div><label class="l">Куда</label><input id="dest" required value="Екатеринбург"></div>
-</div>
-<div class="grid3" style="margin-top:12px">
-<div><label class="l">Дата</label><input type="date" id="when" required></div>
-<div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
-<div><label class="l">Рейсы</label><select id="xfer"><option value="any">Все</option><option value="direct">Только прямые</option></select></div>
-</div>
-<div class="row">
-<label class="check"><input type="checkbox" id="need"> только купе + нижние</label>
-<button class="go" type="submit">Найти маршрут</button>
-</div>
+<div class="grid2"><div><label class="l">Откуда</label><input id="orig" required value="Казань"></div><div><label class="l">Куда</label><input id="dest" required value="Екатеринбург"></div></div>
+<div class="grid3" style="margin-top:12px"><div><label class="l">Дата</label><input type="date" id="when" required></div><div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label class="l">Что показать</label><select id="xfer"><option value="any">Все, включая поезд+автобус</option><option value="mix">Только поезд+автобус</option><option value="direct">Только прямые</option></select></div></div>
+<div class="row"><label class="check"><input type="checkbox" id="need"> только купе + нижние</label><button class="go" type="submit">Найти маршрут</button></div>
 <p id="st"></p>
 </form>
 <div id="list" class="list"></div>
@@ -79,31 +51,26 @@ button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inh
 var API="https://multimodal-routes-eu.onrender.com";
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("when").value=t.toISOString().slice(0,10);}catch(e){}
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
-function badge(v,yes,no,unk){
-if(v===true) return "<span class='b ok'>"+yes+"</span>";
-if(v===false) return "<span class='b no'>"+no+"</span>";
-return "<span class='b muted'>"+unk+"</span>";
+function kind(t){t=String(t||""); if(t.indexOf("bus")>=0||t.indexOf("авто")>=0) return "автобус"; if(t.indexOf("mix")>=0) return "связка"; return "поезд";}
+function badge(v,yes,no,unk){if(v===true)return "<span class='b ok'>"+yes+"</span>";if(v===false)return "<span class='b no'>"+no+"</span>";return "<span class='b muted'>"+unk+"</span>";}
+function steps(x){
+var d=x.details||[];
+if(!d.length) return "<div class='step'><span class='kind'>"+kind(x.type)+"</span> "+(x.from||"")+" → "+(x.to||"")+"</div>";
+return d.map(function(p,i){return "<div class='step'><span class='kind'>"+(i+1)+". "+kind(p.type)+"</span> "+fmt(p.dep)+" "+(p.from||"")+" → "+fmt(p.arr)+" "+(p.to||"")+(p.number?(" · "+p.number):"")+"</div>";}).join("")+(x.hub?("<div class='meta' style='margin-top:8px'>Пересадка: "+x.hub+(x.wait_min?(" · ждать "+x.wait_min+" мин"):"")+"</div>"):"");
 }
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
-var fr=document.getElementById("orig").value.trim();
-var to=document.getElementById("dest").value.trim();
-var date=document.getElementById("when").value;
-var pax=+document.getElementById("pax").value;
-var st=document.getElementById("st"), box=document.getElementById("list");
-st.textContent="Ищем…"; box.innerHTML="";
+var fr=document.getElementById("orig").value.trim(), to=document.getElementById("dest").value.trim(), date=document.getElementById("when").value, pax=+document.getElementById("pax").value;
+var st=document.getElementById("st"), box=document.getElementById("list"); st.textContent="Ищем прямые и поезд+автобус…"; box.innerHTML="";
 try{
 var j=await (await fetch(API+"/trains?from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
-var trains=j.trains||[];
-if(document.getElementById("xfer").value==="direct") trains=trains.filter(function(x){return !x.has_transfers;});
-if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true || r.lower_enough===true;});
+var trains=j.trains||[]; var mode=document.getElementById("xfer").value;
+if(mode==="direct") trains=trains.filter(function(x){return !x.has_transfers && x.type!=="mixed";});
+if(mode==="mix") trains=trains.filter(function(x){return x.type==="mixed" || (x.details&&x.details.length>1);});
+if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true||r.lower_enough===true;});
 st.textContent="Вариантов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Сними фильтр или подожди деплой multimodal-routes-eu.</div>";return;}
-box.innerHTML=trains.map(function(x,i){
-var r=x.rzd||{};
-return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.number||"")+" "+(x.name||"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div><div class='meta'>"+(x.from||fr)+" — "+(x.to||to)+"</div><div class='badges' style='margin-top:10px'>"+badge(r.same_coupe_lower,"купе + нижние","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"<span class='b'>нижних "+(r.lower==null?"?":r.lower)+" · мест "+(r.available==null?"?":r.available)+"</span></div></article>";
-}).join("");
+if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Выбери «Все» и подожди деплой EU (поезд+автобус в свежем коде).</div>";return;}
+box.innerHTML=trains.map(function(x,i){var r=x.rzd||{}; return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||kind(x.type))+(x.type==="mixed"?" · поезд + автобус":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+badge(r.same_coupe_lower,"купе + нижние","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"</div></article>";}).join("");
 }catch(err){st.textContent=String(err);}
 };
-</script>
-</body></html>
+</script></body></html>
