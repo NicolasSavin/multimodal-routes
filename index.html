@@ -20,7 +20,11 @@
 .grid2{display:grid;gap:12px;grid-template-columns:1fr 1fr}.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
 @media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
 label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;margin-bottom:6px}
+.field{position:relative}
 input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
+.sug{position:absolute;left:0;right:0;top:100%;z-index:20;margin:4px 0 0;padding:6px;border-radius:14px;background:#0d1b2c;border:1px solid rgba(255,255,255,.12);display:none;max-height:240px;overflow:auto}
+.sug button{display:block;width:100%;text-align:left;background:transparent;border:0;color:#eef3f8;padding:8px 10px;border-radius:10px;cursor:pointer;font:inherit}
+.sug button:hover{background:rgba(255,255,255,.08)}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
 .check{font-size:14px;color:#d5deea}button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);box-shadow:0 12px 24px rgba(201,151,74,.35)}
 #st{margin:12px 0 0;color:#9fb0c3;font-size:14px}.list{margin-top:18px;display:grid;gap:12px}
@@ -39,8 +43,11 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 <div class="wrap">
 <div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
 <section class="hero"><h1>Поезд плюс автобус<br><em>с понятной пересадкой</em></h1><p>Прямые рейсы и связки через крупные узлы. Места в купе — если касса РЖД отвечает.</p></section>
-<form id="f" class="card">
-<div class="grid2"><div><label class="l">Откуда</label><input id="orig" required value="Казань"></div><div><label class="l">Куда</label><input id="dest" required value="Екатеринбург"></div></div>
+<form id="f" class="card" autocomplete="off">
+<div class="grid2">
+<div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
+<div class="field"><label class="l">Куда</label><input id="dest" required value="Екатеринбург"><div class="sug" id="sug-dest"></div></div>
+</div>
 <div class="grid3" style="margin-top:12px"><div><label class="l">Дата</label><input type="date" id="when" required></div><div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label class="l">Что показать</label><select id="xfer"><option value="any">Все, включая поезд+автобус</option><option value="mix">Только поезд+автобус</option><option value="direct">Только прямые</option></select></div></div>
 <div class="row"><label class="check"><input type="checkbox" id="need"> только купе + нижние</label><button class="go" type="submit">Найти маршрут</button></div>
 <p id="st"></p>
@@ -49,7 +56,26 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 </div>
 <script>
 var API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
+var timers={};
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("when").value=t.toISOString().slice(0,10);}catch(e){}
+function bindSuggest(id){
+var inp=document.getElementById(id), box=document.getElementById("sug-"+id);
+inp.addEventListener("input", function(){
+clearTimeout(timers[id]);
+var q=inp.value.trim();
+if(q.length<2){box.style.display="none";return;}
+timers[id]=setTimeout(async function(){
+try{
+var rows=await (await fetch(API+"?path=/suggest&q="+encodeURIComponent(q))).json();
+box.innerHTML=(rows||[]).map(function(r){return "<button type='button'>"+r.title+"</button>";}).join("");
+box.style.display=rows&&rows.length?"block":"none";
+box.querySelectorAll("button").forEach(function(b){b.onclick=function(){inp.value=b.textContent;box.style.display="none";};});
+}catch(e){box.style.display="none";}
+}, 220);
+});
+document.addEventListener("click", function(e){if(!box.contains(e.target)&&e.target!==inp) box.style.display="none";});
+}
+bindSuggest("orig"); bindSuggest("dest");
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
 function kind(t){t=String(t||""); if(t.indexOf("bus")>=0||t.indexOf("авто")>=0) return "автобус"; if(t.indexOf("mix")>=0) return "связка"; return "поезд";}
 function badge(v,yes,no,unk){if(v===true)return "<span class='b ok'>"+yes+"</span>";if(v===false)return "<span class='b no'>"+no+"</span>";return "<span class='b muted'>"+unk+"</span>";}
@@ -68,8 +94,8 @@ var trains=j.trains||[]; var mode=document.getElementById("xfer").value;
 if(mode==="direct") trains=trains.filter(function(x){return !x.has_transfers && x.type!=="mixed";});
 if(mode==="mix") trains=trains.filter(function(x){return x.type==="mixed" || (x.details&&x.details.length>1);});
 if(document.getElementById("need").checked) trains=trains.filter(function(x){var r=x.rzd||{}; return r.same_coupe_lower===true||r.lower_enough===true;});
-st.textContent="Вариантов: "+trains.length+(j.rzd_error?(" · РЖД: "+j.rzd_error):(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Выбери «Все» или другую дату.</div>";return;}
+st.textContent="Вариантов: "+trains.length+(j.rzd_error?(" · Места РЖД пока недоступны"):(" · РЖД: "+(j.rzd_trains||0)));
+if(!trains.length){box.innerHTML="<div class='warn'>Рейсов на эту дату Нет в Яндекс.Расписании. Возьми ближайший день или узел: Казань, Екатеринбург, Новосибирск.</div>";return;}
 box.innerHTML=trains.map(function(x,i){var r=x.rzd||{}; return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||kind(x.type))+(x.type==="mixed"?" · поезд + автобус":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+badge(r.same_coupe_lower,"купе + нижние","купе нижних мало","купе: нет данных")+badge(r.lower_enough,"нижних хватает","нижних мало","нижние: нет данных")+"</div></article>";}).join("");
 }catch(err){st.textContent=String(err);}
 };
