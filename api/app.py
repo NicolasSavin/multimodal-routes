@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime, timedelta
 
 import requests
 from flask import Flask, jsonify, request
@@ -16,6 +17,18 @@ RZD_HEADERS = {
     "Referer": "https://ticket.rzd.ru/",
     "Origin": "https://ticket.rzd.ru",
 }
+HUBS = [
+    "Москва",
+    "Казань",
+    "Нижний Новгород",
+    "Самара",
+    "Пермь",
+    "Екатеринбург",
+    "Уфа",
+    "Новосибирск",
+    "Челябинск",
+    "Киров",
+]
 
 
 def yandex_code(q):
@@ -30,7 +43,33 @@ def yandex_code(q):
     return None, q
 
 
-def yandex_search(fr, to, date):
+def _parse_seg(s):
+    th = s.get("thread") or {}
+    return {
+        "number": th.get("number"),
+        "name": th.get("title"),
+        "type": th.get("transport_type") or "train",
+        "from": (s.get("from") or {}).get("title"),
+        "to": (s.get("to") or {}).get("title"),
+        "dep": s.get("departure"),
+        "arr": s.get("arrival"),
+        "has_transfers": bool(s.get("has_transfers")),
+        "details": [
+            {
+                "number": ((p.get("thread") or {}).get("number")),
+                "type": ((p.get("thread") or {}).get("transport_type")) or p.get("transport_type"),
+                "from": (p.get("from") or {}).get("title"),
+                "to": (p.get("to") or {}).get("title"),
+                "dep": p.get("departure"),
+                "arr": p.get("arrival"),
+            }
+            for p in (s.get("details") or [])
+            if isinstance(p, dict) and (p.get("thread") or p.get("departure"))
+        ],
+    }
+
+
+def yandex_search(fr, to, date, types="train,bus", transfers="yes"):
     if not YKEY:
         return [], "no_key"
     a, an = yandex_code(fr)
@@ -45,37 +84,86 @@ def yandex_search(fr, to, date):
             "to": b,
             "date": date,
             "lang": "ru_RU",
-            "limit": 20,
-            "transport_types": "train,bus",
+            "limit": 30,
+            "transport_types": types,
+            "transfers": transfers,
         },
-        timeout=12,
+        timeout=14,
     ).json()
     out = []
     for s in data.get("segments") or []:
-        th = s.get("thread") or {}
-        out.append(
-            {
-                "number": th.get("number"),
-                "name": th.get("title"),
-                "dep": s.get("departure"),
-                "arr": s.get("arrival"),
-                "from": (s.get("from") or {}).get("title") or an,
-                "to": (s.get("to") or {}).get("title") or bn,
-                "type": th.get("transport_type") or "train",
-                "has_transfers": bool(s.get("has_transfers")),
-                "segments": [
-                    {
-                        "number": th.get("number"),
-                        "transport_type": th.get("transport_type") or "train",
-                        "origin": (s.get("from") or {}).get("title"),
-                        "destination": (s.get("to") or {}).get("title"),
-                        "departure_time": s.get("departure"),
-                        "arrival_time": s.get("arrival"),
-                    }
-                ],
-            }
-        )
+        item = _parse_seg(s)
+        item["from"] = item["from"] or an
+        item["to"] = item["to"] or bn
+        out.append(item)
     return out, data.get("error") or "ok"
+
+
+def _when(s):
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def mix_hub(origin, dest, date):
+    mixed = []
+    o = origin.strip().lower()
+    d = dest.strip().lower()
+    for hub in HUBS:
+        if hub.lower() in {o, d}:
+            continue
+        try:
+            trains, _ = yandex_search(origin, hub, date, "train", "no")
+            buses, _ = yandex_search(hub, dest, date, "bus", "no")
+        except Exception:
+            continue
+        for tr in trains[:4]:
+            ta = _when(tr.get("arr"))
+            if not ta:
+                continue
+            for bu in buses[:6]:
+                bd = _when(bu.get("dep"))
+                if not bd:
+                    continue
+                wait = (bd - ta).total_seconds() / 60
+                if 40 <= wait <= 10 * 60:
+                    mixed.append(
+                        {
+                            "number": (tr.get("number") or "") + "+авто",
+                            "name": "Поезд + автобус через " + hub,
+                            "type": "mixed",
+                            "from": tr.get("from") or origin,
+                            "to": bu.get("to") or dest,
+                            "dep": tr.get("dep"),
+                            "arr": bu.get("arr"),
+                            "has_transfers": True,
+                            "hub": hub,
+                            "wait_min": int(wait),
+                            "details": [
+                                {
+                                    "number": tr.get("number"),
+                                    "type": "train",
+                                    "from": tr.get("from"),
+                                    "to": tr.get("to") or hub,
+                                    "dep": tr.get("dep"),
+                                    "arr": tr.get("arr"),
+                                },
+                                {
+                                    "number": bu.get("number"),
+                                    "type": "bus",
+                                    "from": bu.get("from") or hub,
+                                    "to": bu.get("to"),
+                                    "dep": bu.get("dep"),
+                                    "arr": bu.get("arr"),
+                                },
+                            ],
+                        }
+                    )
+                    if len(mixed) >= 8:
+                        return mixed
+                    break
+    return mixed
 
 
 def rzd_code(q):
@@ -117,8 +205,7 @@ def rzd_seats(fr, to, date, pax):
     out = {}
     for t in data.get("Trains") or data.get("trains") or []:
         num = t.get("TrainNumber") or t.get("trainNumber")
-        lower = avail = 0
-        coupe_lower = 0
+        lower = avail = coupe_lower = 0
         for g in t.get("CarGroups") or t.get("carGroups") or []:
             places = int(g.get("TotalPlaceQuantity") or g.get("PlaceQuantity") or 0)
             low = g.get("LowerPlaceQuantity")
@@ -136,7 +223,7 @@ def rzd_seats(fr, to, date, pax):
             "same_coupe_lower": coupe_lower >= pax,
             "same_coupe": coupe_lower >= pax,
         }
-    return {"ok": True, "trains": list(out.values()), "map": out}
+    return {"ok": True, "map": out}
 
 
 def _norm(n):
@@ -159,15 +246,24 @@ def trains():
     err = None
     trains_out, status = [], None
     try:
-        trains_out, status = yandex_search(origin, dest, date)
+        a, status = yandex_search(origin, dest, date, "train,bus", "yes")
+        b, _ = yandex_search(origin, dest, date, "train", "no")
+        c, _ = yandex_search(origin, dest, date, "bus", "no")
+        seen = set()
+        for item in a + b + c:
+            key = (item.get("number"), item.get("dep"), item.get("type"))
+            if key in seen:
+                continue
+            seen.add(key)
+            trains_out.append(item)
+        if request.args.get("mix", "1") != "0":
+            trains_out.extend(mix_hub(origin, dest, date))
     except Exception as e:
         err = str(e)
     seats, seats_err = {}, None
     try:
         raw = rzd_seats(origin, dest, date, pax)
         seats = raw.get("map") or {}
-        if not raw.get("ok"):
-            seats_err = raw.get("error")
     except Exception as e:
         seats_err = str(e)
     for item in trains_out:
