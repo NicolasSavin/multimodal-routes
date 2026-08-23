@@ -4,12 +4,14 @@ import time
 import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 YKEY = os.environ.get("YANDEX_RASP_KEY") or os.environ.get("YANDEX_RASP_API_KEY") or ""
-# ticket.rzd.ru hangs from EU/US - off by default
 RZD_ON = os.environ.get("RZD_ENABLED", "0").lower() in {"1", "true", "yes"}
 RZD = "https://ticket.rzd.ru"
 RZD_HEADERS = {
@@ -25,9 +27,22 @@ def yandex_code(q):
         params={"format": "old", "part": q},
         timeout=(3, 6),
     ).json()
-    for row in (d or [None, []])[1]:
-        if row and str(row[0]).startswith(("c", "s")):
-            return row[0], row[1]
+    rows = (d or [None, []])[1] or []
+    city = None
+    station = None
+    for row in rows:
+        if not row:
+            continue
+        code = str(row[0])
+        title = row[1]
+        if code.startswith("c") and city is None:
+            city = (code, title)
+        if code.startswith("s") and station is None:
+            station = (code, title)
+    if city:
+        return city
+    if station:
+        return station
     return None, q
 
 
@@ -46,11 +61,11 @@ def yandex_search(fr, to, date):
             "to": b,
             "date": date,
             "lang": "ru_RU",
-            "limit": 25,
+            "limit": 40,
             "transport_types": "train,bus",
             "transfers": "yes",
         },
-        timeout=(3, 10),
+        timeout=(3, 12),
     ).json()
     out = []
     for s in data.get("segments") or []:
@@ -95,7 +110,8 @@ def rzd_code(q):
         RZD + "/isdk/suggests",
         params={"Query": q, "TransportType": "rail", "GroupResults": "true", "Language": "ru"},
         headers=RZD_HEADERS,
-        timeout=(2, 4),
+        timeout=(3, 6),
+        verify=False,
     ).json()
     for n in data.get("transport_node_suggests") or []:
         codes = n.get("Codes") or {}
@@ -124,7 +140,8 @@ def rzd_seats(fr, to, date, pax):
             "getByLocalTime": "true",
         },
         headers=RZD_HEADERS,
-        timeout=(2, 5),
+        timeout=(3, 8),
+        verify=False,
     ).json()
     out = {}
     for t in data.get("Trains") or data.get("trains") or []:
@@ -136,7 +153,7 @@ def rzd_seats(fr, to, date, pax):
             low_n = int(low) if low is not None else 0
             lower += low_n
             typ = str(g.get("CarTypeName") or g.get("CarType") or "").lower()
-            if "\u043a\u0443\u043f\u0435" in typ or "coupe" in typ:
+            if "купе" in typ or "coupe" in typ:
                 coupe_lower += low_n
         key = "".join(ch for ch in str(num or "").upper() if ch.isalnum())
         out[key] = {
@@ -157,9 +174,34 @@ def health():
             "ts": int(time.time()),
             "yandex": bool(YKEY),
             "rzd_enabled": RZD_ON,
-            "region": "eu",
+            "region": "yc",
         }
     )
+
+
+@app.get("/suggest")
+def suggest():
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify([])
+    d = requests.get(
+        "https://suggests.rasp.yandex.net/all_suggests",
+        params={"format": "old", "part": q},
+        timeout=(2, 5),
+    ).json()
+    out = []
+    seen = set()
+    for row in (d or [None, []])[1] or []:
+        if not row:
+            continue
+        title = str(row[1])
+        if title in seen:
+            continue
+        seen.add(title)
+        out.append({"title": title, "code": row[0]})
+        if len(out) >= 12:
+            break
+    return jsonify(out)
 
 
 @app.get("/trains")
@@ -185,7 +227,7 @@ def trains():
         except Exception as e:
             seats_err = str(e)
     else:
-        seats_err = "rzd_off_eu_hangs"
+        seats_err = "rzd_off"
 
     for item in trains_out:
         key = "".join(ch for ch in str(item.get("number") or "").upper() if ch.isalnum())
