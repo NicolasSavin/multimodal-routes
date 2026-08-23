@@ -38,3 +38,23 @@ if(!bus || mix || sap || x.type==="train") html=html.replace("</article>", rzdBt
 return html;
 };
 })();
+(function(){
+var f=document.getElementById("f");
+if(!f) return;
+f.addEventListener("submit", function(){
+var n=0;
+var t=setInterval(function(){
+n++;
+var st=document.getElementById("st");
+var list=document.getElementById("list");
+if(!st || n>50){clearInterval(t);return;}
+var txt=st.textContent||"";
+if(/Вариантов:\s*[1-9]/.test(txt)){clearInterval(t);return;}
+if(/Вариантов:\s*0/.test(txt) && /РЖД:\s*[1-9]/.test(txt)){
+clearInterval(t);
+var href=rzdUrl({from:(lastQ&&lastQ.fr)||"", to:(lastQ&&lastQ.to)||""});
+list.innerHTML="<div class='warn'>Яндекс сейчас не отдал расписание (лимит ключа), но РЖД нашла поезда. <a class='map' target='_blank' href='"+href+"'>Открыть эти станции и дату в РЖД</a></div>";
+}
+},400);
+});
+})();
