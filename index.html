@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>МультиМаршрут</title>
+<title>Мультимодальный маршрут</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018;min-height:100vh}
@@ -14,7 +14,7 @@
 .nav a{color:#f3e0b8;text-decoration:none;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18)}
 .hero h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:0 0 10px;font-weight:800}
 .hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8,#c9974a);-webkit-background-clip:text;color:transparent}
-.hero p{margin:0 0 22px;color:#b7c6d6}
+.hero p{margin:0 0 22px;color:#b7c6d6}.org{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e7d8c;margin:0 0 8px;font-weight:500}
 .card{background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:22px}
 .grid2{display:grid;gap:12px;grid-template-columns:1fr 1fr}.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
 @media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
@@ -45,8 +45,8 @@ a.map{color:#f3e0b8}
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>Агрыз — Новосибирск — Барнаул</em></h1><p>Если прямого нет: поезд до Новосибирска, дальше автобус. Места автобуса — Туту и Busfor.</p></section>
+<div class="nav"><div class="brand"><div class="mark">Н</div><div><b>МУЛЬТИМОДАЛЬНЫЙ</b><span>НТЦ Охрана</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<section class="hero"><h1>Мультимодальный<br><em>маршрут</em></h1><p class="org">Команда охрана грузов · НТЦ Охрана</p><p>Поезд и автобус. Если прямого нет — пересадка, места автобуса на Туту и Busfor.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Ижевск"><div class="sug" id="sug-orig"></div></div>
