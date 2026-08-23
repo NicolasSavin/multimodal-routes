@@ -5,63 +5,51 @@
 <title>МультиМаршрут</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#d4b483}
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018;min-height:100vh}
 .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1200px 600px at 10% -10%,#1c4f7a 0%,transparent 55%),radial-gradient(900px 500px at 100% 0%,#7a4a18 0%,transparent 50%),linear-gradient(165deg,#05080d,#0c1a2b 48%,#122033)}
 .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
 .nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
-.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d7a0,#b8893a);display:grid;place-items:center;font-weight:800;color:#2a1a05;box-shadow:0 10px 24px rgba(184,137,58,.35)}
+.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d7a0,#b8893a);display:grid;place-items:center;font-weight:800;color:#2a1a05}
 .brand{display:flex;gap:12px;align-items:center}.brand b{display:block;letter-spacing:.18em;font-size:11px;color:#d4b483}.brand span{font-size:13px;color:#9fb0c3}
 .nav a{color:#f3e0b8;text-decoration:none;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18)}
 .hero h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:0 0 10px;font-weight:800}
-.hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8,#c9974a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8,#c9974a);-webkit-background-clip:text;color:transparent}
 .hero p{margin:0 0 22px;color:#b7c6d6}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:22px;box-shadow:0 30px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18);backdrop-filter:blur(16px)}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:22px}
 .grid2{display:grid;gap:12px;grid-template-columns:1fr 1fr}.grid3{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
 @media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
 label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;margin-bottom:6px}
-.field{position:relative}
-input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
+.field{position:relative}input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
 .sug{position:absolute;left:0;right:0;top:100%;z-index:20;margin:4px 0 0;padding:6px;border-radius:14px;background:#0d1b2c;border:1px solid rgba(255,255,255,.12);display:none;max-height:240px;overflow:auto}
 .sug button{display:block;width:100%;text-align:left;background:transparent;border:0;color:#eef3f8;padding:8px 10px;border-radius:10px;cursor:pointer;font:inherit}
-.sug button:hover{background:rgba(255,255,255,.08)}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
-.check{font-size:14px;color:#d5deea}button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);box-shadow:0 12px 24px rgba(201,151,74,.35)}
-.more,.mapbtn{margin:8px auto 0;border:1px solid rgba(243,224,184,.3);background:transparent;color:#f3e0b8;padding:10px 16px;border-radius:999px;cursor:pointer;font:inherit}
-.more{display:none}
-#st{margin:12px 0 0;color:#9fb0c3;font-size:14px}.list{margin-top:18px;display:grid;gap:12px}
-.trip{position:relative;overflow:hidden}.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
+.check{font-size:14px;color:#d5deea}button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c)}
+.more,.mapbtn{margin-top:10px;border:1px solid rgba(243,224,184,.3);background:transparent;color:#f3e0b8;padding:10px 16px;border-radius:999px;cursor:pointer;font:inherit}
+.more{display:none}#st{margin:12px 0 0;color:#9fb0c3;font-size:14px}.list{margin-top:18px;display:grid;gap:12px}
+.trip{position:relative}.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
 .meta{font-size:12px;color:#9fb0c3}.when{font-size:18px;font-weight:700;margin:6px 0 8px}
-.step{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);font-size:13px}
-.kind{display:inline-block;min-width:72px;color:#f3e0b8;font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.08em}
+.step{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.22);font-size:13px}
+.kind{display:inline-block;min-width:72px;color:#f3e0b8;font-weight:700;text-transform:uppercase;font-size:11px}
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .b{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06)}
-.ok{background:rgba(46,160,110,.18);color:#b8f0d3}.no{background:rgba(180,60,60,.16);color:#f3b4b4}.muted{color:#8ea0b3}
-.sap{background:rgba(80,140,220,.22);color:#cfe4ff}
+.ok{background:rgba(46,160,110,.18);color:#b8f0d3}.no{background:rgba(180,60,60,.16);color:#f3b4b4}.muted{color:#8ea0b3}.sap{background:rgba(80,140,220,.22);color:#cfe4ff}
 .warn{padding:16px;border-radius:16px;background:rgba(212,180,131,.1)}
 .modal{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:16px}
-.modal.show{display:flex}
-.sheet{max-width:560px;width:100%;background:#0d1a28;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:20px}
-.coupe{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.box{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
-.box b{display:block;font-size:12px;color:#d4b483;margin-bottom:8px}
-.seats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.seat{padding:8px;border-radius:8px;text-align:center;font-size:12px;background:rgba(255,255,255,.06)}
-.seat.low{background:rgba(46,160,110,.28)}
-.seat.up{background:rgba(255,255,255,.08);color:#9fb0c3}
-</style>
-</head>
+.modal.show{display:flex}.sheet{max-width:640px;width:100%;max-height:90vh;overflow:auto;background:#0d1a28;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:20px}
+.box{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}
+.seat{display:inline-block;margin:3px;padding:6px 8px;border-radius:8px;background:rgba(46,160,110,.25);font-size:12px}
+</style></head>
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · сапсан</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>с понятной пересадкой</em></h1><p>Фильтры купе/нижних — по данным РЖД. Схема купе — типовая, нижние нечётные.</p></section>
+<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>вагон · купе · места</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<section class="hero"><h1>Поезд плюс автобус<br><em>схема мест по вагонам</em></h1><p>Кнопка «Схема купе» открывает вагоны и свободные места, если касса отдала.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
 <div class="field"><label class="l">Куда</label><input id="dest" required value="Екатеринбург"><div class="sug" id="sug-dest"></div></div>
 </div>
-<div class="grid3" style="margin-top:12px"><div><label class="l">Дата</label><input type="date" id="when" required></div><div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label class="l">Что показать</label><select id="xfer"><option value="any">Все</option><option value="sapsan">Только Сапсан / Ласточка</option><option value="mix">Только поезд+автобус</option><option value="direct">Только прямые</option></select></div></div>
+<div class="grid3" style="margin-top:12px"><div><label class="l">Дата</label><input type="date" id="when" required></div><div><label class="l">Человек</label><select id="pax"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label class="l">Что показать</label><select id="xfer"><option value="any">Все</option><option value="sapsan">Сапсан / Ласточка</option><option value="mix">Поезд+автобус</option><option value="direct">Прямые</option></select></div></div>
 <div class="row">
 <label class="check"><input type="checkbox" id="needCoupe"> одно купе</label>
 <label class="check"><input type="checkbox" id="needLower"> только нижние</label>
@@ -73,41 +61,35 @@ input,select{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rg
 <button class="more" id="more" type="button">Показать ещё</button>
 </div>
 <div class="modal" id="seatModal" onclick="if(event.target===this)this.classList.remove('show')">
-<div class="sheet"><div class="row" style="margin:0 0 8px;justify-content:space-between"><b id="seatTitle">Схема купе</b><button class="mapbtn" type="button" onclick="document.getElementById('seatModal').classList.remove('show')">Закрыть</button></div><p class="meta" id="seatNote"></p><div class="coupe" id="seatGrid"></div></div>
+<div class="sheet"><div class="row" style="margin:0 0 8px;justify-content:space-between"><b id="seatTitle">Вагоны</b><button class="mapbtn" type="button" onclick="document.getElementById('seatModal').classList.remove('show')">Закрыть</button></div><div id="seatGrid"></div></div>
 </div>
 <script>
 var API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
-var timers={}, shown=5, cache=[];
+var timers={}, shown=5, cache=[], lastQ={};
 try{var t=new Date();t.setDate(t.getDate()+3);document.getElementById("when").value=t.toISOString().slice(0,10);}catch(e){}
 function bindSuggest(id){
 var inp=document.getElementById(id), box=document.getElementById("sug-"+id);
 inp.addEventListener("input", function(){
-clearTimeout(timers[id]);
-var q=inp.value.trim();
-if(q.length<2){box.style.display="none";return;}
+clearTimeout(timers[id]); var q=inp.value.trim(); if(q.length<2){box.style.display="none";return;}
 timers[id]=setTimeout(async function(){
-try{
-var rows=await (await fetch(API+"?path=/suggest&q="+encodeURIComponent(q))).json();
+try{var rows=await (await fetch(API+"?path=/suggest&q="+encodeURIComponent(q))).json();
 box.innerHTML=(rows||[]).map(function(r){return "<button type='button'>"+r.title+"</button>";}).join("");
 box.style.display=rows&&rows.length?"block":"none";
 box.querySelectorAll("button").forEach(function(b){b.onclick=function(){inp.value=b.textContent;box.style.display="none";};});
 }catch(e){box.style.display="none";}
-}, 220);
-});
+},220);});
 document.addEventListener("click", function(e){if(!box.contains(e.target)&&e.target!==inp) box.style.display="none";});
 }
 bindSuggest("orig"); bindSuggest("dest");
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
-function isSap(x){var t=((x.name||"")+" "+(x.number||"")+" "+(x.type||"")).toLowerCase(); return t.indexOf("сапсан")>=0 || t.indexOf("sapsan")>=0 || t.indexOf("ласточк")>=0;}
-function kind(t,x){if(x&&isSap(x)) return "сапсан"; t=String(t||""); if(t.indexOf("bus")>=0||t.indexOf("авто")>=0) return "автобус"; if(t.indexOf("mix")>=0) return "связка"; return "поезд";}
+function isSap(x){var t=((x.name||"")+" "+(x.number||"")).toLowerCase(); return /сапсан|sapsan|ласточк/.test(t) || /^7[5-7]/.test(String(x.number||""));}
+function kind(t,x){if(x&&isSap(x)) return "сапсан"; t=String(t||""); if(/bus|авто/.test(t)) return "автобус"; if(/mix/.test(t)) return "связка"; return "поезд";}
 function badge(v,yes,no,unk){if(v===true)return "<span class='b ok'>"+yes+"</span>";if(v===false)return "<span class='b no'>"+no+"</span>";return "<span class='b muted'>"+unk+"</span>";}
 function okSeat(r, coupe, lower){
-if(!r || (r.same_coupe==null && r.same_coupe_lower==null && r.lower_enough==null)) return null;
-var same = r.same_coupe_lower===true || r.same_coupe===true;
-var low = r.lower_enough===true || r.same_coupe_lower===true;
+if(!r) return null;
 if(coupe && lower) return r.same_coupe_lower===true;
-if(coupe) return same;
-if(lower) return low;
+if(coupe) return r.same_coupe===true || r.same_coupe_lower===true;
+if(lower) return r.lower_enough===true || r.same_coupe_lower===true;
 return true;
 }
 function steps(x){
@@ -117,44 +99,54 @@ return d.map(function(p,i){return "<div class='step'><span class='kind'>"+(i+1)+
 }
 function card(x,i){
 var r=x.rzd||{}, sap=isSap(x);
-return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||kind(x.type,x))+(sap?" · Сапсан/Ласточка":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан · сидячие</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough||r.same_coupe_lower,"нижние есть","нижних мало","нижние: нет данных")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Схема купе</button></article>";
+var cnt=(r.lower!=null?("нижних "+r.lower+" / всего "+ (r.available||"—")):"");
+return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||"")+(x.number?(" · № "+x.number):"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough,"нижние есть","нижних мало","нижние: нет данных")+(cnt?"<span class='b'>"+cnt+"</span>":"")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Вагоны и купе</button></article>";
 }
-function openMap(i){
+async function openMap(i){
 var x=cache[i]||{}, r=x.rzd||{};
-var html="";
-for(var k=0;k<4;k++){
-var n=k*4;
-html+="<div class='box'><b>Купе "+(k+1)+"</b><div class='seats'><div class='seat low'>ниж "+(n+1)+"</div><div class='seat up'>верх "+(n+2)+"</div><div class='seat low'>ниж "+(n+3)+"</div><div class='seat up'>верх "+(n+4)+"</div></div></div>";
-}
-document.getElementById("seatTitle").textContent="Схема купе · "+(x.number||x.name||"поезд");
-document.getElementById("seatNote").textContent=(r.same_coupe_lower?"По РЖД: можно взять нижние в одном купе. ":"")+"Зелёные — нижние (нечётные). Это типовая схема вагона, не живая карта конкретных номеров кассы.";
-document.getElementById("seatGrid").innerHTML=html;
+document.getElementById("seatTitle").textContent="Вагоны · "+(x.number||x.name||"");
+document.getElementById("seatGrid").innerHTML="<p class='meta'>Загружаю список вагонов…</p>";
 document.getElementById("seatModal").classList.add("show");
+var cars=(r.groups||[]).slice();
+try{
+var j=await (await fetch(API+"?path=/cars&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&train="+encodeURIComponent(x.number||"")+"&dep="+encodeURIComponent(x.dep||"")+"&pax="+lastQ.pax)).json();
+if(j.cars&&j.cars.length) cars=j.cars;
+}catch(e){}
+if(!cars.length){
+document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны. Нижних: "+(r.lower||"—")+", всего: "+(r.available||"—")+". Нижние в купе обычно нечётные: 1 и 3 в каждом купе.</p>";
+return;
 }
-function draw(){
-var box=document.getElementById("list"), btn=document.getElementById("more");
-box.innerHTML=cache.slice(0,shown).map(card).join("");
-btn.style.display=shown<cache.length?"block":"none";
-btn.textContent="Показать ещё ("+(cache.length-shown)+")";
+document.getElementById("seatGrid").innerHTML=cars.map(function(c,n){
+var title=(c.car?("Вагон "+c.car+" · "):("Группа "+(n+1)+" · "))+(c.type||"");
+var seats=String(c.free||"");
+var comps=c.compartments||[];
+var compHtml="";
+if(comps && comps.length){
+compHtml=comps.map(function(k,i){var places=k.places||k.Places||k.freePlaces||k; return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+(Array.isArray(places)?places.join(", "):places)+"</div>";}).join("");
+} else if(seats){
+compHtml="<div class='meta'>Места: "+seats.split(/[,;]+/).map(function(s){return "<span class='seat'>"+s.trim()+"</span>";}).join("")+"</div>";
 }
+return "<div class='box'><b>"+title+"</b><div class='meta'>свободно "+(c.available||"—")+" · нижних "+(c.lower||"—")+"</div>"+compHtml+"</div>";
+}).join("");
+}
+function draw(){document.getElementById("list").innerHTML=cache.slice(0,shown).map(card).join(""); var btn=document.getElementById("more"); btn.style.display=shown<cache.length?"block":"none"; btn.textContent="Показать ещё ("+(cache.length-shown)+")";}
 document.getElementById("more").onclick=function(){shown+=5; draw();};
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
-var fr=document.getElementById("orig").value.trim(), to=document.getElementById("dest").value.trim(), date=document.getElementById("when").value, pax=+document.getElementById("pax").value;
+lastQ={fr:document.getElementById("orig").value.trim(), to:document.getElementById("dest").value.trim(), date:document.getElementById("when").value, pax:+document.getElementById("pax").value};
 var coupe=document.getElementById("needCoupe").checked, lower=document.getElementById("needLower").checked;
-var st=document.getElementById("st"), box=document.getElementById("list"); st.textContent="Ищем маршруты…"; box.innerHTML=""; document.getElementById("more").style.display="none"; shown=5;
+var st=document.getElementById("st"); st.textContent="Ищем…"; document.getElementById("list").innerHTML=""; document.getElementById("more").style.display="none"; shown=5;
 try{
-var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(fr)+"&to="+encodeURIComponent(to)+"&date="+date+"&pax="+pax)).json();
-var trains=j.trains||[]; var mode=document.getElementById("xfer").value;
+var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&pax="+lastQ.pax)).json();
+var trains=j.trains||[], mode=document.getElementById("xfer").value;
 if(mode==="direct") trains=trains.filter(function(x){return !x.has_transfers && x.type!=="mixed";});
 if(mode==="mix") trains=trains.filter(function(x){return x.type==="mixed" || (x.details&&x.details.length>1);});
 if(mode==="sapsan") trains=trains.filter(isSap);
 var hasSeat=trains.some(function(x){return x.rzd;});
-if((coupe||lower) && hasSeat) trains=trains.filter(function(x){return isSap(x) || okSeat(x.rzd||{}, coupe, lower)===true;});
+if((coupe||lower)&&hasSeat) trains=trains.filter(function(x){return isSap(x)||okSeat(x.rzd||{},coupe,lower)===true;});
 cache=trains;
-st.textContent="Вариантов: "+trains.length+" · Сапсан/Ласточка: "+trains.filter(isSap).length+(j.rzd_error?" · места РЖД нет":(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){box.innerHTML="<div class='warn'>Пусто. Сними галочки или смени дату.</div>";return;}
-draw();
+st.textContent="Вариантов: "+trains.length+(j.rzd_error?" · РЖД не ответила":(" · РЖД: "+(j.rzd_trains||0)));
+if(!trains.length){document.getElementById("list").innerHTML="<div class='warn'>Пусто</div>";return;} draw();
 }catch(err){st.textContent=String(err);}
 };
 </script></body></html>
