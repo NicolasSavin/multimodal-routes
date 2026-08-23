@@ -46,7 +46,7 @@ a.map{color:#f3e0b8}
 <div class="bg"></div>
 <div class="wrap">
 <div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>Агрыз — Новосибирск — Барнаул</em></h1><p>Если прямого нет: поезд до Новосибирска, дальше автобус.</p></section>
+<section class="hero"><h1>Поезд плюс автобус<br><em>Агрыз — Новосибирск — Барнаул</em></h1><p>Если прямого нет: поезд до Новосибирска, дальше автобус. Места автобуса — Туту и Busfor.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Ижевск"><div class="sug" id="sug-orig"></div></div>
@@ -206,4 +206,6 @@ st.textContent="Вариантов: "+cache.length+note+(j.rzd_error?" · РЖД
 if(!cache.length){document.getElementById("list").innerHTML="<div class='warn'>Нет вариантов даже с пересадкой.</div>";return;} draw();
 }catch(err){st.textContent=String(err);}
 };
-</script></body></html>
+</script>
+<script src="bus-seats.js?v=1"></script>
+</body></html>
