@@ -68,7 +68,7 @@ def yandex_search(fr, to, date, limit=20):
     b, bn = yandex_code(to)
     if not a or not b:
         return [], "no_codes"
-    data = requests.get(
+    r = requests.get(
         "https://api.rasp.yandex.net/v3.0/search/",
         params={
             "apikey": YKEY,
@@ -80,8 +80,18 @@ def yandex_search(fr, to, date, limit=20):
             "transport_types": "train,bus",
             "transfers": "yes",
         },
-        timeout=(3, 10),
-    ).json()
+        timeout=(3, 8),
+    )
+    try:
+        data = r.json()
+    except Exception:
+        return [], {"http_code": r.status_code, "text": r.text[:180]}
+    if r.status_code >= 400 or data.get("error") or data.get("error_code"):
+        return [], {
+            "http_code": r.status_code,
+            "error_code": data.get("error_code") or data.get("error"),
+            "text": data.get("text") or data.get("message") or "yandex error",
+        }
     out = []
     for s in data.get("segments") or []:
         th = s.get("thread") or {}
@@ -117,7 +127,7 @@ def yandex_search(fr, to, date, limit=20):
                 "details": details,
             }
         )
-    return out, data.get("error") or "ok"
+    return out, "ok"
 
 
 def pick_hubs(origin, dest):
@@ -180,6 +190,8 @@ def stitch(leg1, leg2, hub, note=None):
 
 def compose(origin, dest, date):
     direct, status = yandex_search(origin, dest, date, 25)
+    if status != "ok":
+        return direct, status
     extra = []
     for hub in pick_hubs(origin, dest):
         a, _ = yandex_search(origin, hub, date, 8)
@@ -238,6 +250,13 @@ def parse_group(g):
     }
 
 
+def rzd_pick(t, *keys):
+    for k in keys:
+        if t.get(k):
+            return t.get(k)
+    return None
+
+
 def rzd_seats(fr, to, date, pax):
     o_code, d_code = rzd_code(fr), rzd_code(to)
     data = requests.get(
@@ -268,6 +287,11 @@ def rzd_seats(fr, to, date, pax):
         coupe_lower = sum(g["lower"] for g in groups if "купе" in g["type"].lower() or "coupe" in g["type"].lower())
         out[norm(num)] = {
             "number": num,
+            "name": rzd_pick(t, "TrainDescription", "TrainName", "DisplayTrainNumber") or num,
+            "from": rzd_pick(t, "OriginName", "OriginStationName") or fr,
+            "to": rzd_pick(t, "DestinationName", "DestinationStationName") or to,
+            "dep": rzd_pick(t, "DepartureDateTime", "LocalDepartureDateTime", "DepartureDate"),
+            "arr": rzd_pick(t, "ArrivalDateTime", "LocalArrivalDateTime", "ArrivalDate"),
             "available": avail,
             "lower": lower,
             "lower_enough": lower >= pax,
@@ -278,6 +302,28 @@ def rzd_seats(fr, to, date, pax):
             "destination": d_code,
             "provider": t.get("Provider") or t.get("provider"),
         }
+    return out
+
+
+def rzd_as_trains(origin, dest, seats):
+    out = []
+    for s in seats.values():
+        out.append(
+            {
+                "number": s.get("number"),
+                "name": s.get("name") or s.get("number"),
+                "type": "train",
+                "from": s.get("from") or origin,
+                "to": s.get("to") or dest,
+                "dep": s.get("dep"),
+                "arr": s.get("arr"),
+                "has_transfers": False,
+                "details": [],
+                "rzd": s,
+                "source": "rzd",
+            }
+        )
+    out.sort(key=lambda z: str(z.get("dep") or ""))
     return out
 
 
@@ -376,13 +422,20 @@ def trains():
             seats = rzd_seats(origin, dest, date, pax)
         except Exception as e:
             seats_err = str(e)
+    have = {norm(item.get("number")) for item in trains_out}
     for item in trains_out:
         key = norm(item.get("number"))
         if key in seats:
             item["rzd"] = seats[key]
+    if seats:
+        extra = rzd_as_trains(origin, dest, seats)
+        for item in extra:
+            if norm(item.get("number")) not in have:
+                trains_out.append(item)
+                have.add(norm(item.get("number")))
     return jsonify(
         {
-            "source": "yandex-rasp+hubs",
+            "source": "yandex-rasp+hubs+rzd",
             "from": origin,
             "to": dest,
             "trains": trains_out,
