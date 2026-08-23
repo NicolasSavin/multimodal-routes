@@ -29,6 +29,7 @@ button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inh
 .trip{position:relative}.trip:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#f3e0b8,#c8943c)}
 .meta{font-size:12px;color:#9fb0c3}.when{font-size:18px;font-weight:700;margin:6px 0 8px}
 .step{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.22);font-size:13px}
+.xfer{background:rgba(212,180,131,.12);border:1px dashed rgba(243,224,184,.25)}
 .kind{display:inline-block;min-width:72px;color:#f3e0b8;font-weight:700;text-transform:uppercase;font-size:11px}
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .b{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06)}
@@ -39,12 +40,13 @@ button.go{border:0;cursor:pointer;padding:13px 22px;border-radius:999px;font:inh
 .box{border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;margin-top:8px}
 .seat{display:inline-block;margin:3px;padding:6px 8px;border-radius:8px;font-size:12px;background:rgba(255,255,255,.08)}
 .seat.low{background:rgba(46,160,110,.3);color:#b8f0d3}
+a.map{color:#f3e0b8}
 </style></head>
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · сапсан</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>фильтр по типу рейса</em></h1><p>Сапсан, поезд, автобус или связка. Места — отдельным списком.</p></section>
+<div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<section class="hero"><h1>Поезд плюс автобус<br><em>если прямого нет — ищем с пересадкой</em></h1><p>В пересадке видно где вышли, куда идти и сколько ждать.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
 <div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
@@ -99,100 +101,90 @@ document.addEventListener("click", function(e){if(!box.contains(e.target)&&e.tar
 }
 bindSuggest("orig"); bindSuggest("dest");
 function fmt(s){if(!s)return "—";var d=new Date(s);if(isNaN(d))return String(s).slice(0,16);return d.toLocaleString("ru-RU",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function mins(a,b){var x=new Date(a),y=new Date(b); if(isNaN(x)||isNaN(y)) return null; return Math.round((y-x)/60000);}
 function isSap(x){var t=((x.name||"")+" "+(x.number||"")).toLowerCase(); return /сапсан|sapsan|ласточк/.test(t) || /^7[5-7]/.test(String(x.number||""));}
-function typesOf(x){
-var d=x.details||[];
-if(d.length) return d.map(function(p){return String(p.type||"");});
-return [String(x.type||"")];
-}
-function isBus(x){
-var t=typesOf(x).join(" ").toLowerCase()+" "+(x.type||"");
-return /bus|авто/.test(t) && !/train|поезд/.test(t) && x.type!=="mixed";
-}
-function isTrainOnly(x){
-if(isSap(x) || x.type==="mixed") return false;
-var t=typesOf(x).join(" ").toLowerCase();
-if(/bus|авто/.test(t) && /train|поезд/.test(t)) return false;
-return x.type==="train" || /train|поезд/.test(t) || (!/bus|авто/.test(t) && !x.has_transfers);
-}
-function isMix(x){
-if(x.type==="mixed") return true;
-var t=typesOf(x).join(" ").toLowerCase();
-return /bus|авто/.test(t) && /train|поезд/.test(t);
-}
+function typesOf(x){var d=x.details||[]; if(d.length) return d.map(function(p){return String(p.type||"");}); return [String(x.type||"")];}
+function isBus(x){var t=typesOf(x).join(" ").toLowerCase()+" "+(x.type||""); return /bus|авто/.test(t) && !isMix(x) && !isSap(x);}
+function isMix(x){if(x.type==="mixed"||x.hub) return true; var t=typesOf(x).join(" ").toLowerCase(); return /bus|авто/.test(t) && /train|поезд/.test(t);}
+function isTrainOnly(x){ if(isSap(x)||isMix(x)||isBus(x)) return false; return x.type==="train" || /train|поезд/.test(typesOf(x).join(" ").toLowerCase()) || !x.has_transfers;}
 function kind(t,x){if(x&&isSap(x)) return "сапсан"; t=String(t||""); if(/bus|авто/.test(t)) return "автобус"; if(/mix/.test(t)) return "связка"; return "поезд";}
 function badge(v,yes,no,unk){if(v===true)return "<span class='b ok'>"+yes+"</span>";if(v===false)return "<span class='b no'>"+no+"</span>";return "<span class='b muted'>"+unk+"</span>";}
-function okSeat(r, mode){
-if(!r || !mode) return true;
-if(mode==="both") return r.same_coupe_lower===true;
-if(mode==="coupe") return r.same_coupe===true || r.same_coupe_lower===true;
-if(mode==="lower") return r.lower_enough===true || r.same_coupe_lower===true;
-return true;
+function okSeat(r, mode){if(!r || !mode) return true; if(mode==="both") return r.same_coupe_lower===true; if(mode==="coupe") return r.same_coupe===true || r.same_coupe_lower===true; if(mode==="lower") return r.lower_enough===true || r.same_coupe_lower===true; return true;}
+function maps(q){return "https://yandex.ru/maps/?text="+encodeURIComponent(q);}
+function howGo(aType,bType,fromSt,toSt,city){
+var a=/bus|авто/.test(String(aType||"")) ? "автовокзал" : "ж/д вокзал";
+var b=/bus|авто/.test(String(bType||"")) ? "автовокзал" : "ж/д вокзал";
+if(fromSt && toSt && fromSt!==toSt) return "Вышли на <b>"+fromSt+"</b>. Идите на <b>"+toSt+"</b> ("+a+" → "+b+").";
+return "Пересадка в "+(city||fromSt||"узле")+": "+a+" → "+b+".";
 }
-function seatNums(val){
-var out=[]; String(Array.isArray(val)?val.join(","): (val||"")).split(/[^0-9]+/).forEach(function(x){ if(x) out.push(+x); }); return out;
-}
-function allSeats(c){
-var n=seatNums(c.free);
-(c.compartments||[]).forEach(function(k){ n=n.concat(seatNums(k.places||k.Places||k.freePlaces||k)); });
-return n;
-}
-function isLow(n){ return n%2===1; }
 function steps(x){
-var d=x.details||[];
-if(!d.length) return "<div class='step'><span class='kind'>"+kind(x.type,x)+"</span> "+(x.from||"")+" → "+(x.to||"")+"</div>";
-return d.map(function(p,i){return "<div class='step'><span class='kind'>"+(i+1)+". "+kind(p.type,p)+"</span> "+fmt(p.dep)+" "+(p.from||"")+" → "+fmt(p.arr)+" "+(p.to||"")+(p.number?(" · "+p.number):"")+"</div>";}).join("")+(x.hub?("<div class='meta' style='margin-top:8px'>Пересадка: "+x.hub+(x.wait_min?(" · ждать "+x.wait_min+" мин"):"")+"</div>"):"");
+var d=x.details||[], html="";
+if(!d.length) html="<div class='step'><span class='kind'>"+kind(x.type,x)+"</span> "+(x.from||"")+" → "+(x.to||"")+"</div>";
+else d.forEach(function(p,i){
+html+="<div class='step'><span class='kind'>"+(i+1)+". "+kind(p.type,p)+"</span> "+fmt(p.dep)+" <b>"+(p.from||"")+"</b> → "+fmt(p.arr)+" <b>"+(p.to||"")+"</b>"+(p.number?(" · № "+p.number):"")+"</div>";
+if(d[i+1]){
+var w=mins(p.arr,d[i+1].dep);
+var city=x.hub||p.to||d[i+1].from;
+var tip=howGo(p.type,d[i+1].type,p.to,d[i+1].from,city);
+var q=(p.to||"")+" "+(d[i+1].from||city||"");
+html+="<div class='step xfer'><span class='kind'>пересадка</span> "+tip+" Ждать: <b>"+(w!=null?(w+" мин"):"—")+"</b>. <a class='map' target='_blank' href='"+maps(q)+"'>карта пересадки</a></div>";
 }
+});
+return html;
+}
+function seatNums(val){var out=[]; String(Array.isArray(val)?val.join(","):(val||"")).split(/[^0-9]+/).forEach(function(x){ if(x) out.push(+x); }); return out;}
+function allSeats(c){var n=seatNums(c.free); (c.compartments||[]).forEach(function(k){ n=n.concat(seatNums(k.places||k.Places||k.freePlaces||k)); }); return n;}
+function isLow(n){ return n%2===1; }
 function card(x,i){
 var r=x.rzd||{}, sap=isSap(x);
 var cnt=(r.lower!=null?("нижних "+r.lower+" / всего "+ (r.available||"—")):"");
-return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||"")+(x.number?(" · № "+x.number):"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough,"нижние есть","нижних мало","нижние: нет данных")+(cnt?"<span class='b'>"+cnt+"</span>":"")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Вагоны и купе</button></article>";
+return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||"")+(x.number?(" · № "+x.number):"")+(isMix(x)?" · с пересадкой":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough,"нижние есть","нижних мало","нижние: нет данных")+(cnt?"<span class='b'>"+cnt+"</span>":"")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Вагоны и купе</button></article>";
 }
 async function openMap(i){
 var x=cache[i]||{}, r=x.rzd||{};
 document.getElementById("seatTitle").textContent="Вагоны · "+(x.number||x.name||"");
-document.getElementById("seatGrid").innerHTML="<p class='meta'>Загружаю список вагонов…</p>";
+document.getElementById("seatGrid").innerHTML="<p class='meta'>Загружаю…</p>";
 document.getElementById("seatModal").classList.add("show");
 var cars=(r.groups||[]).slice();
-try{
-var j=await (await fetch(API+"?path=/cars&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&train="+encodeURIComponent(x.number||"")+"&dep="+encodeURIComponent(x.dep||"")+"&pax="+lastQ.pax)).json();
-if(j.cars&&j.cars.length) cars=j.cars;
-}catch(e){}
+try{var j=await (await fetch(API+"?path=/cars&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&train="+encodeURIComponent(x.number||"")+"&dep="+encodeURIComponent(x.dep||"")+"&pax="+lastQ.pax)).json(); if(j.cars&&j.cars.length) cars=j.cars;}catch(e){}
 if(!cars.length){document.getElementById("seatGrid").innerHTML="<p class='meta'>Касса не отдала вагоны.</p>";return;}
 document.getElementById("seatGrid").innerHTML=cars.map(function(c,n){
 var seats=allSeats(c), low=seats.filter(isLow);
 var title=(c.car?("Вагон "+c.car+" · "):("Группа "+(n+1)+" · "))+(c.type||"");
 var comps=c.compartments||[], compHtml="";
-if(comps.length){
-compHtml=comps.map(function(k,i){
-var places=seatNums(k.places||k.Places||k.freePlaces||k), lows=places.filter(isLow);
-return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+places.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join(" ")+(lows.length?" · нижних "+lows.length:" · нижних нет")+"</div>";
-}).join("");
-} else if(seats.length){
-compHtml="<div class='meta'>"+seats.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join("")+"</div>";
-}
+if(comps.length){compHtml=comps.map(function(k,i){var places=seatNums(k.places||k.Places||k.freePlaces||k), lows=places.filter(isLow); return "<div class='meta'>Купе "+(k.compartment||k.Compartment||(i+1))+": "+places.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join(" ")+(lows.length?" · нижних "+lows.length:" · нижних нет")+"</div>";}).join("");}
+else if(seats.length){compHtml="<div class='meta'>"+seats.map(function(p){return "<span class='seat "+(isLow(p)?"low":"")+"'>"+p+(isLow(p)?" низ":" верх")+"</span>";}).join("")+"</div>";}
 return "<div class='box'><b>"+title+"</b><div class='meta'>свободно "+(c.available||seats.length)+" · нижних "+low.length+(low.length?(" (№ "+low.join(", ")+")"):" нет")+"</div>"+compHtml+"</div>";
 }).join("");
+}
+function byMode(list, mode){
+if(mode==="sapsan") return list.filter(isSap);
+if(mode==="train") return list.filter(isTrainOnly);
+if(mode==="bus") return list.filter(isBus);
+if(mode==="mix") return list.filter(isMix);
+return list.slice();
 }
 function draw(){document.getElementById("list").innerHTML=cache.slice(0,shown).map(card).join(""); var btn=document.getElementById("more"); btn.style.display=shown<cache.length?"block":"none"; btn.textContent="Показать ещё ("+(cache.length-shown)+")";}
 document.getElementById("more").onclick=function(){shown+=5; draw();};
 document.getElementById("f").onsubmit=async function(e){
 e.preventDefault();
 lastQ={fr:document.getElementById("orig").value.trim(), to:document.getElementById("dest").value.trim(), date:document.getElementById("when").value, pax:+document.getElementById("pax").value};
-var modeSeat=document.getElementById("seats").value;
+var modeSeat=document.getElementById("seats").value, mode=document.getElementById("xfer").value;
 var st=document.getElementById("st"); st.textContent="Ищем…"; document.getElementById("list").innerHTML=""; document.getElementById("more").style.display="none"; shown=5;
 try{
 var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&pax="+lastQ.pax)).json();
-var trains=j.trains||[], mode=document.getElementById("xfer").value;
-if(mode==="sapsan") trains=trains.filter(isSap);
-if(mode==="train") trains=trains.filter(isTrainOnly);
-if(mode==="bus") trains=trains.filter(isBus);
-if(mode==="mix") trains=trains.filter(isMix);
-var hasSeat=trains.some(function(x){return x.rzd;});
+var all=j.trains||[], note="";
+var trains=byMode(all, mode);
+var hasSeat=all.some(function(x){return x.rzd;});
 if(modeSeat && hasSeat) trains=trains.filter(function(x){return isSap(x)||okSeat(x.rzd||{}, modeSeat);});
+if(!trains.length && mode!=="any"){
+var extra=all.filter(function(x){return isMix(x) || x.has_transfers;});
+if(modeSeat && hasSeat) extra=extra.filter(function(x){return isSap(x)||okSeat(x.rzd||{}, modeSeat);});
+if(extra.length){ trains=extra; note=" · прямых нет, показаны с пересадкой"; }
+}
 cache=trains;
-st.textContent="Вариантов: "+trains.length+(j.rzd_error?" · РЖД не ответила":(" · РЖД: "+(j.rzd_trains||0)));
-if(!trains.length){document.getElementById("list").innerHTML="<div class='warn'>Пусто по этому фильтру. Смени тип рейса или места.</div>";return;} draw();
+st.textContent="Вариантов: "+trains.length+note+(j.rzd_error?" · РЖД не ответила":(" · РЖД: "+(j.rzd_trains||0)));
+if(!trains.length){document.getElementById("list").innerHTML="<div class='warn'>Нет вариантов даже с пересадкой.</div>";return;} draw();
 }catch(err){st.textContent=String(err);}
 };
 </script></body></html>
