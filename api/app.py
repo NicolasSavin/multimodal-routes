@@ -38,6 +38,10 @@ def parse_dt(s):
         return None
 
 
+def norm(num):
+    return "".join(ch for ch in str(num or "").upper() if ch.isalnum())
+
+
 def yandex_code(q):
     d = requests.get(
         "https://suggests.rasp.yandex.net/all_suggests",
@@ -100,31 +104,30 @@ def yandex_search(fr, to, date, limit=20):
             )
         types = {d.get("type") for d in details}
         mixed = "train" in types and "bus" in types
-        item = {
-            "number": th.get("number"),
-            "name": th.get("title"),
-            "type": "mixed" if mixed else (th.get("transport_type") or "train"),
-            "from": (s.get("from") or {}).get("title") or an,
-            "to": (s.get("to") or {}).get("title") or bn,
-            "dep": s.get("departure"),
-            "arr": s.get("arrival"),
-            "has_transfers": bool(s.get("has_transfers")) or len(details) > 1,
-            "details": details,
-        }
-        out.append(item)
+        out.append(
+            {
+                "number": th.get("number"),
+                "name": th.get("title"),
+                "type": "mixed" if mixed else (th.get("transport_type") or "train"),
+                "from": (s.get("from") or {}).get("title") or an,
+                "to": (s.get("to") or {}).get("title") or bn,
+                "dep": s.get("departure"),
+                "arr": s.get("arrival"),
+                "has_transfers": bool(s.get("has_transfers")) or len(details) > 1,
+                "details": details,
+            }
+        )
     return out, data.get("error") or "ok"
 
 
 def pick_hubs(origin, dest):
-    o = origin.lower()
-    d = dest.lower()
+    o, d = origin.lower(), dest.lower()
     names = []
     for key, hubs in HUBS.items():
         if key in o or key in d:
             names.extend(hubs)
     names.extend(DEFAULT_HUBS)
-    seen = set()
-    out = []
+    seen, out = set(), []
     for n in names:
         low = n.lower()
         if low in o or low in d or low in seen:
@@ -136,41 +139,29 @@ def pick_hubs(origin, dest):
     return out
 
 
+def kind_name(x):
+    return x.get("number") or x.get("type") or "рейс"
+
+
 def stitch(leg1, leg2, hub):
-    a = parse_dt(leg1.get("arr"))
-    b = parse_dt(leg2.get("dep"))
+    a, b = parse_dt(leg1.get("arr")), parse_dt(leg2.get("dep"))
     if not a or not b:
         return None
     wait = int((b - a).total_seconds() / 60)
     if wait < 35 or wait > 16 * 60:
         return None
     d1 = leg1.get("details") or [
-        {
-            "number": leg1.get("number"),
-            "type": leg1.get("type"),
-            "from": leg1.get("from"),
-            "to": leg1.get("to"),
-            "dep": leg1.get("dep"),
-            "arr": leg1.get("arr"),
-        }
+        {"number": leg1.get("number"), "type": leg1.get("type"), "from": leg1.get("from"), "to": leg1.get("to"), "dep": leg1.get("dep"), "arr": leg1.get("arr")}
     ]
     d2 = leg2.get("details") or [
-        {
-            "number": leg2.get("number"),
-            "type": leg2.get("type"),
-            "from": leg2.get("from"),
-            "to": leg2.get("to"),
-            "dep": leg2.get("dep"),
-            "arr": leg2.get("arr"),
-        }
+        {"number": leg2.get("number"), "type": leg2.get("type"), "from": leg2.get("from"), "to": leg2.get("to"), "dep": leg2.get("dep"), "arr": leg2.get("arr")}
     ]
     details = d1 + d2
     types = {x.get("type") for x in details}
-    mixed = "train" in types and "bus" in types
     return {
         "number": (leg1.get("number") or "") + "+" + (leg2.get("number") or ""),
-        "name": (leg1.get("name") or kind_name(leg1)) + " + " + (leg2.get("name") or kind_name(leg2)),
-        "type": "mixed" if mixed else "train",
+        "name": kind_name(leg1) + " + " + kind_name(leg2),
+        "type": "mixed" if ("train" in types and "bus" in types) else "train",
         "from": leg1.get("from"),
         "to": leg2.get("to"),
         "dep": leg1.get("dep"),
@@ -182,17 +173,12 @@ def stitch(leg1, leg2, hub):
     }
 
 
-def kind_name(x):
-    return x.get("number") or x.get("type") or "рейс"
-
-
 def compose(origin, dest, date):
     direct, status = yandex_search(origin, dest, date, 25)
     extra = []
     for hub in pick_hubs(origin, dest):
         a, _ = yandex_search(origin, hub, date, 8)
         b, _ = yandex_search(hub, dest, date, 8)
-        # next calendar day for late arrivals
         try:
             nxt = (datetime.fromisoformat(date) + timedelta(days=1)).date().isoformat()
             b2, _ = yandex_search(hub, dest, nxt, 6)
@@ -205,8 +191,7 @@ def compose(origin, dest, date):
                 if item:
                     extra.append(item)
     extra.sort(key=lambda z: z.get("dep") or "")
-    seen = set()
-    uniq = []
+    seen, uniq = set(), []
     for z in extra:
         key = (z.get("dep"), z.get("arr"), z.get("hub"), z.get("number"))
         if key in seen:
@@ -234,9 +219,22 @@ def rzd_code(q):
     raise ValueError("no rzd code")
 
 
+def parse_group(g):
+    typ = str(g.get("CarTypeName") or g.get("CarType") or g.get("carTypeName") or "")
+    low = g.get("LowerPlaceQuantity")
+    return {
+        "car": g.get("CarNumber") or g.get("carNumber") or g.get("Number"),
+        "type": typ,
+        "available": int(g.get("TotalPlaceQuantity") or g.get("PlaceQuantity") or g.get("Places") or 0),
+        "lower": int(low) if low is not None else 0,
+        "free": g.get("FreePlaces") or g.get("freePlaces") or "",
+        "compartments": g.get("FreePlacesByCompartments") or g.get("freePlacesByCompartments") or [],
+        "provider": g.get("Provider") or None,
+    }
+
+
 def rzd_seats(fr, to, date, pax):
-    o_code = rzd_code(fr)
-    d_code = rzd_code(to)
+    o_code, d_code = rzd_code(fr), rzd_code(to)
     data = requests.get(
         RZD + "/api/v1/railway-service/prices/train-pricing",
         params={
@@ -247,41 +245,73 @@ def rzd_seats(fr, to, date, pax):
             "adultPassengersQuantity": pax,
             "childrenPassengersQuantity": 0,
             "getTrainsFromSchedule": "true",
-            "carGrouping": "Group",
+            "carGrouping": "DontGroup",
             "specialPlacesDemand": "StandardPlacesAndForDisabledPersons",
             "carIssuingType": "Passenger",
             "getByLocalTime": "true",
         },
         headers=RZD_HEADERS,
-        timeout=(3, 8),
+        timeout=(3, 10),
         verify=False,
     ).json()
     out = {}
     for t in data.get("Trains") or data.get("trains") or []:
         num = t.get("TrainNumber") or t.get("trainNumber")
-        lower = avail = coupe_lower = 0
-        for g in t.get("CarGroups") or t.get("carGroups") or []:
-            avail += int(g.get("TotalPlaceQuantity") or g.get("PlaceQuantity") or 0)
-            low = g.get("LowerPlaceQuantity")
-            low_n = int(low) if low is not None else 0
-            lower += low_n
-            typ = str(g.get("CarTypeName") or g.get("CarType") or "").lower()
-            if "купе" in typ or "coupe" in typ:
-                coupe_lower += low_n
-        key = "".join(ch for ch in str(num or "").upper() if ch.isalnum())
-        out[key] = {
+        groups = [parse_group(g) for g in (t.get("CarGroups") or t.get("carGroups") or [])]
+        lower = sum(g["lower"] for g in groups)
+        avail = sum(g["available"] for g in groups)
+        coupe_lower = sum(g["lower"] for g in groups if "купе" in g["type"].lower() or "coupe" in g["type"].lower())
+        out[norm(num)] = {
             "number": num,
             "available": avail,
             "lower": lower,
             "lower_enough": lower >= pax,
+            "same_coupe": coupe_lower >= pax or any("купе" in g["type"].lower() and g["available"] >= pax for g in groups),
             "same_coupe_lower": coupe_lower >= pax,
+            "groups": groups,
+            "origin": o_code,
+            "destination": d_code,
+            "provider": t.get("Provider") or t.get("provider"),
         }
     return out
 
 
+def rzd_cars(fr, to, date, train, dep=None, provider=None, pax=1):
+    seats = rzd_seats(fr, to, date, pax)
+    info = seats.get(norm(train)) or {}
+    groups = list(info.get("groups") or [])
+    if any(g.get("car") or g.get("free") or g.get("compartments") for g in groups):
+        return groups, None
+    o_code, d_code = rzd_code(fr), rzd_code(to)
+    payload = {
+        "OriginCode": o_code,
+        "DestinationCode": d_code,
+        "TrainNumber": train,
+        "DepartureDate": (dep or (date + "T00:00:00"))[:19],
+        "Provider": provider or info.get("provider") or "P1",
+        "SpecialPlacesDemand": "StandardPlacesAndForDisabledPersons",
+        "CarIssuingType": "Passenger",
+        "OnlyFpkBranded": False,
+        "HasPlacesForLargeFamily": False,
+    }
+    r = requests.post(
+        RZD + "/apib2b/p/Railway/V1/Search/CarPricing",
+        params={"service_provider": "B2B_RZD", "isBonusPurchase": "false"},
+        json=payload,
+        headers=RZD_HEADERS,
+        timeout=(4, 12),
+        verify=False,
+    )
+    data = r.json() if r.content else {}
+    cars = []
+    for g in data.get("Cars") or data.get("cars") or []:
+        cars.append(parse_group(g) | {"car": g.get("CarNumber") or g.get("Number") or g.get("carNumber")})
+    return cars or groups, data.get("error") or None
+
+
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY), "rzd_enabled": RZD_ON, "compose": True})
+    return jsonify({"ok": True, "ts": int(time.time()), "yandex": bool(YKEY), "rzd_enabled": RZD_ON, "cars": True})
 
 
 @app.get("/suggest")
@@ -289,11 +319,7 @@ def suggest():
     q = (request.args.get("q") or "").strip()
     if len(q) < 2:
         return jsonify([])
-    d = requests.get(
-        "https://suggests.rasp.yandex.net/all_suggests",
-        params={"format": "old", "part": q},
-        timeout=(2, 5),
-    ).json()
+    d = requests.get("https://suggests.rasp.yandex.net/all_suggests", params={"format": "old", "part": q}, timeout=(2, 5)).json()
     out, seen = [], set()
     for row in (d or [None, []])[1] or []:
         if not row:
@@ -306,6 +332,23 @@ def suggest():
         if len(out) >= 12:
             break
     return jsonify(out)
+
+
+@app.get("/cars")
+def cars():
+    try:
+        cars_out, err = rzd_cars(
+            request.args.get("from") or "",
+            request.args.get("to") or "",
+            request.args.get("date") or "",
+            request.args.get("train") or "",
+            request.args.get("dep"),
+            request.args.get("provider"),
+            int(request.args.get("pax") or 1),
+        )
+        return jsonify({"cars": cars_out, "error": err})
+    except Exception as e:
+        return jsonify({"cars": [], "error": str(e)})
 
 
 @app.get("/trains")
@@ -329,7 +372,7 @@ def trains():
         except Exception as e:
             seats_err = str(e)
     for item in trains_out:
-        key = "".join(ch for ch in str(item.get("number") or "").upper() if ch.isalnum())
+        key = norm(item.get("number"))
         if key in seats:
             item["rzd"] = seats[key]
     return jsonify(
