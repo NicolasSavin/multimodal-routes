@@ -46,11 +46,11 @@ a.map{color:#f3e0b8}
 <div class="bg"></div>
 <div class="wrap">
 <div class="nav"><div class="brand"><div class="mark">М</div><div><b>МУЛЬТИМАРШРУТ</b><span>поезд · автобус · пересадка</span></div></div><a href="hotels.html">Гостиницы</a></div>
-<section class="hero"><h1>Поезд плюс автобус<br><em>сначала прямые, потом короткие пересадки</em></h1><p>Чем меньше пересадок и короче ждать — тем выше в списке.</p></section>
+<section class="hero"><h1>Поезд плюс автобус<br><em>Агрыз — Новосибирск — Барнаул</em></h1><p>Если прямого нет: поезд до Новосибирска, дальше автобус.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
-<div class="field"><label class="l">Откуда</label><input id="orig" required value="Казань"><div class="sug" id="sug-orig"></div></div>
-<div class="field"><label class="l">Куда</label><input id="dest" required value="Екатеринбург"><div class="sug" id="sug-dest"></div></div>
+<div class="field"><label class="l">Откуда</label><input id="orig" required value="Ижевск"><div class="sug" id="sug-orig"></div></div>
+<div class="field"><label class="l">Куда</label><input id="dest" required value="Барнаул"><div class="sug" id="sug-dest"></div></div>
 </div>
 <div class="grid3" style="margin-top:12px">
 <div><label class="l">Дата</label><input type="date" id="when" required></div>
@@ -138,7 +138,7 @@ function isLow(n){ return n%2===1; }
 function card(x,i){
 var r=x.rzd||{}, sap=isSap(x);
 var cnt=(r.lower!=null?("нижних "+r.lower+" / всего "+ (r.available||"—")):"");
-return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||"")+(x.number?(" · № "+x.number):"")+(isMix(x)?" · с пересадкой":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough,"нижние есть","нижних мало","нижние: нет данных")+(cnt?"<span class='b'>"+cnt+"</span>":"")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Вагоны и купе</button></article>";
+return "<article class='card trip'><div class='meta'>Вариант "+(i+1)+" · "+(x.name||x.number||"")+(x.number?(" · № "+x.number):"")+(isMix(x)?" · с пересадкой":"")+"</div><div class='when'>"+fmt(x.dep)+" → "+fmt(x.arr)+"</div>"+steps(x)+(x.hint?("<div class='step xfer'>"+x.hint+"</div>"):"")+"<div class='badges'>"+(sap?"<span class='b sap'>Сапсан</span>":"")+badge(r.same_coupe_lower||r.same_coupe,"одно купе","купе нет","купе: нет данных")+badge(r.lower_enough,"нижние есть","нижних мало","нижние: нет данных")+(cnt?"<span class='b'>"+cnt+"</span>":"")+"</div><button class='mapbtn' type='button' onclick='openMap("+i+")'>Вагоны и купе</button></article>";
 }
 async function openMap(i){
 var x=cache[i]||{}, r=x.rzd||{};
@@ -167,7 +167,8 @@ document.getElementById("seatGrid").innerHTML=html;
 }
 function xferCount(x){var d=x.details||[]; if(d.length>1) return d.length-1; if(x.has_transfers||x.hub||isMix(x)) return 1; return 0;}
 function waitOf(x){if(x.wait_min!=null) return +x.wait_min; var d=x.details||[],w=0; for(var i=0;i<d.length-1;i++){var m=mins(d[i].arr,d[i+1].dep); if(m!=null) w+=m;} return w;}
-function sortRoutes(list){return list.slice().sort(function(a,b){var ca=xferCount(a),cb=xferCount(b); if(ca!==cb) return ca-cb; var wa=waitOf(a),wb=waitOf(b); if(wa!==wb) return wa-wb; return String(a.dep||"").localeCompare(String(b.dep||""));});}
+function nskBus(x){var t=JSON.stringify(x||{}).toLowerCase(); return /новосиб/.test(t) && /bus|авто/.test(t);}
+function sortRoutes(list){return list.slice().sort(function(a,b){var na=nskBus(a)?0:1, nb=nskBus(b)?0:1; if(na!==nb) return na-nb; var ca=xferCount(a),cb=xferCount(b); if(ca!==cb) return ca-cb; var wa=waitOf(a),wb=waitOf(b); if(wa!==wb) return wa-wb; return String(a.dep||"").localeCompare(String(b.dep||""));});}
 function byMode(list, mode){
 if(mode==="sapsan") return list.filter(isSap);
 if(mode==="train") return list.filter(isTrainOnly);
@@ -185,6 +186,13 @@ var st=document.getElementById("st"); st.textContent="Ищем…"; document.get
 try{
 var j=await (await fetch(API+"?path=/trains&from="+encodeURIComponent(lastQ.fr)+"&to="+encodeURIComponent(lastQ.to)+"&date="+lastQ.date+"&pax="+lastQ.pax)).json();
 var all=j.trains||[], note="";
+if(/ижевск|агрыз/i.test(lastQ.fr) && /барнаул/i.test(lastQ.to)){
+st.textContent="Ищем Агрыз → Новосибирск поезд + автобус до Барнаула…";
+try{
+var j2=await (await fetch(API+"?path=/trains&from="+encodeURIComponent("Агрыз")+"&to="+encodeURIComponent("Барнаул")+"&date="+lastQ.date+"&pax="+lastQ.pax)).json();
+(j2.trains||[]).forEach(function(x){ x.hint="Посадка в Агрызе. Дальше лучше: поезд до Новосибирска, автобус Новосибирск → Барнаул."; all.push(x); });
+}catch(e2){}
+}
 var trains=byMode(all, mode);
 var hasSeat=all.some(function(x){return x.rzd;});
 if(modeSeat && hasSeat) trains=trains.filter(function(x){return isSap(x)||okSeat(x.rzd||{}, modeSeat);});
