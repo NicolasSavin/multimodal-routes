@@ -22,8 +22,8 @@ RZD_HEADERS = {
 }
 
 HUBS = {
-    "ижевск": ["Агрыз", "Екатеринбург", "Казань"],
-    "агрыз": ["Екатеринбург", "Новосибирск", "Казань"],
+    "ижевск": ["Агрыз", "Новосибирск", "Екатеринбург", "Казань"],
+    "агрыз": ["Новосибирск", "Екатеринбург", "Казань"],
     "барнаул": ["Новосибирск", "Екатеринбург"],
 }
 DEFAULT_HUBS = ["Екатеринбург", "Новосибирск", "Казань"]
@@ -127,6 +127,8 @@ def pick_hubs(origin, dest):
         if key in o or key in d:
             names.extend(hubs)
     names.extend(DEFAULT_HUBS)
+    if "ижевск" in o and "барнаул" in d:
+        names = ["Агрыз", "Новосибирск"] + names
     seen, out = set(), []
     for n in names:
         low = n.lower()
@@ -134,7 +136,7 @@ def pick_hubs(origin, dest):
             continue
         seen.add(low)
         out.append(n)
-        if len(out) == 3:
+        if len(out) == 4:
             break
     return out
 
@@ -143,12 +145,12 @@ def kind_name(x):
     return x.get("number") or x.get("type") or "рейс"
 
 
-def stitch(leg1, leg2, hub):
+def stitch(leg1, leg2, hub, note=None):
     a, b = parse_dt(leg1.get("arr")), parse_dt(leg2.get("dep"))
     if not a or not b:
         return None
     wait = int((b - a).total_seconds() / 60)
-    if wait < 35 or wait > 16 * 60:
+    if wait < 35 or wait > 18 * 60:
         return None
     d1 = leg1.get("details") or [
         {"number": leg1.get("number"), "type": leg1.get("type"), "from": leg1.get("from"), "to": leg1.get("to"), "dep": leg1.get("dep"), "arr": leg1.get("arr")}
@@ -158,7 +160,7 @@ def stitch(leg1, leg2, hub):
     ]
     details = d1 + d2
     types = {x.get("type") for x in details}
-    return {
+    item = {
         "number": (leg1.get("number") or "") + "+" + (leg2.get("number") or ""),
         "name": kind_name(leg1) + " + " + kind_name(leg2),
         "type": "mixed" if ("train" in types and "bus" in types) else "train",
@@ -171,6 +173,9 @@ def stitch(leg1, leg2, hub):
         "wait_min": wait,
         "details": details,
     }
+    if note:
+        item["hint"] = note
+    return item
 
 
 def compose(origin, dest, date):
@@ -198,7 +203,7 @@ def compose(origin, dest, date):
             continue
         seen.add(key)
         uniq.append(z)
-        if len(uniq) >= 12:
+        if len(uniq) >= 14:
             break
     return direct + uniq, status
 
