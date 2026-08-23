@@ -2,18 +2,19 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Гостиницы · МультиМаршрут</title>
+<title>Гостиницы</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="users.js"></script>
 <script src="hotels.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018}
 .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1000px 500px at 0% 0%,#1c4f7a,transparent 55%),radial-gradient(800px 400px at 100% 0%,#7a4a18,transparent 50%),#071018}
 .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.nav a,.nav button,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px;flex-wrap:wrap}
+.nav a,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
 h1{margin:0 0 8px;font-size:36px}p.lead{color:#b7c6d6;margin:0 0 18px}
 .card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:16px}
-input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
+input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit;margin-top:8px}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;padding:12px}td{padding:12px;border-top:1px solid rgba(255,255,255,.08)}
 .price{text-align:right;font-weight:700;color:#f3e0b8}
 .name{color:#f3e0b8;cursor:pointer;text-decoration:underline;text-underline-offset:3px;background:none;border:0;font:inherit;padding:0}
@@ -26,17 +27,32 @@ table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;lett
 .box{padding:12px;border-radius:14px;background:rgba(255,255,255,.05)}
 .box b{display:block;color:#d4b483;font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
 .box span{font-size:22px;font-weight:800;color:#f3e0b8}
-@media print{body{background:#fff;color:#111}.bg,.nav,.modal{display:none!important}.card{box-shadow:none}}
+#gate{min-height:70vh;display:flex;align-items:center}
+.err{color:#f3b4b4;margin-top:10px}
+label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 </style>
 </head>
 <body>
 <div class="bg"></div>
-<div class="wrap">
-<div class="nav"><a href="index.html">Маршруты</a><button type="button" onclick="window.print()">Печать / PDF</button></div>
+<div id="gate" class="wrap">
+<div class="card" style="max-width:420px;margin:40px auto;width:100%">
+<h1 style="font-size:28px">Вход</h1>
+<p class="lead">Логин — фамилия. Пароль — дата рождения 8 цифр, например 15031990.</p>
+<label class="l">Логин</label><input id="login" autocomplete="username">
+<label class="l">Пароль</label><input id="pass" type="password" autocomplete="current-password">
+<p class="err" id="err"></p>
+<button class="btn" type="button" style="margin-top:14px" onclick="enter()">Войти</button>
+</div>
+</div>
+<div id="app" class="wrap" style="display:none">
+<div class="nav"><a href="index.html">Маршруты</a><span id="who"></span>
+<button class="btn" type="button" id="addBtn" style="display:none" onclick="editHotel(-1)">Добавить</button>
+<button class="btn" type="button" onclick="window.print()">Печать</button>
+<button class="btn" type="button" onclick="out()">Выйти</button></div>
 <h1>Гостиницы</h1>
-<p class="lead">Нажми на название — карточка с фото, адресом, телефоном и ценами.</p>
-<div class="card" style="margin-bottom:14px"><input id="q" placeholder="Поиск: Бийск, Омск, Уют…"></div>
-<div class="card" style="padding:6px 8px 10px"><table><thead><tr><th>Название</th><th>Адрес</th><th class="price">Отчёт, ₽</th></tr></thead><tbody id="tb"></tbody></table></div>
+<p class="lead">Нажми на название — карточка. Админ может править записи.</p>
+<div class="card" style="margin-bottom:14px"><input id="q" placeholder="Поиск"></div>
+<div class="card" style="padding:6px 8px 10px"><table><thead><tr><th>Название</th><th>Адрес</th><th class="price">Отчёт, ₽</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
 </div>
 <div class="modal" id="m" onclick="if(event.target===this)this.classList.remove('show')">
 <div class="sheet">
@@ -49,41 +65,87 @@ table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;lett
 <div class="box"><b>В отчёт</b><span id="hrep"></span></div>
 <div class="box"><b>Проживание</b><span id="hstay"></span></div>
 </div>
-<div class="row" style="margin-top:16px"><button class="btn" type="button" onclick="document.getElementById('m').classList.remove('show')">Закрыть</button></div>
-</div>
-</div>
-</div>
+<div style="margin-top:16px"><button class="btn" type="button" onclick="document.getElementById('m').classList.remove('show')">Закрыть</button>
+<button class="btn" type="button" id="editOpen" style="display:none">Править</button></div>
+</div></div></div>
+<div class="modal" id="ed" onclick="if(event.target===this)this.classList.remove('show')">
+<div class="sheet"><div class="pad">
+<h2 id="edTitle">Гостиница</h2>
+<label class="l">Название</label><input id="en">
+<label class="l">Адрес</label><input id="ea">
+<label class="l">Телефон</label><input id="et">
+<label class="l">Цена в отчёт</label><input id="ep" type="number">
+<label class="l">Цена проживания</label><input id="es" type="number">
+<label class="l">Фото (URL)</label><input id="ei">
+<div style="margin-top:14px"><button class="btn" type="button" onclick="saveHotel()">Сохранить</button>
+<button class="btn" type="button" onclick="document.getElementById('ed').classList.remove('show')">Отмена</button></div>
+</div></div></div>
 <script>
-var PHOTOS=[
-"https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=60",
-"https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=900&q=60",
-"https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=900&q=60",
-"https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=60",
-"https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=60"
-];
+var KEY="mm_user", HKEY="mm_hotels", editI=-1;
+var PHOTOS=["https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=60"];
+function norm(s){return String(s||"").trim().toLowerCase().replace(/ё/g,"е");}
+function hotels(){
+try{var s=localStorage.getItem(HKEY); if(s) return JSON.parse(s);}catch(e){}
+return (window.HOTELS||[]).slice();
+}
+function setHotels(arr){ window.HOTELS=arr; try{localStorage.setItem(HKEY, JSON.stringify(arr));}catch(e){} }
+function user(){ try{return JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){return null;} }
+function enter(){
+var l=norm(document.getElementById("login").value), p=String(document.getElementById("pass").value||"").trim();
+var u=(window.HOTEL_USERS||[]).find(function(x){return norm(x.login)===l && String(x.pass)===p;});
+if(!u){document.getElementById("err").textContent="Неверный логин или пароль"; return;}
+localStorage.setItem(KEY, JSON.stringify({login:u.login, admin:!!u.admin, name:u.name||u.login}));
+showApp();
+}
+function out(){ localStorage.removeItem(KEY); location.reload(); }
+function showApp(){
+var u=user(); if(!u) return;
+document.getElementById("gate").style.display="none";
+document.getElementById("app").style.display="block";
+document.getElementById("who").textContent=u.name+(u.admin?" · админ":"");
+document.getElementById("addBtn").style.display=u.admin?"inline-block":"none";
+draw();
+}
 function rub(n){return Number(n||0).toLocaleString("ru-RU")+" ₽";}
-function stay(h){return h.s||h.p;}
-function phone(h){return h.t||"телефон уточнить на месте";}
-function addr(h){return h.a||"адрес в базе не указан · "+h.n;}
 function openHotel(i){
-var h=(window.HOTELS||[])[i]; if(!h) return;
+var h=hotels()[i]; if(!h) return;
 document.getElementById("hn").textContent=h.n;
-document.getElementById("ha").textContent="Адрес: "+addr(h);
-document.getElementById("ht").innerHTML=h.t?("Телефон: <a href='tel:"+h.t+"' style='color:#f3e0b8'>"+h.t+"</a>"):("Телефон: "+phone(h));
+document.getElementById("ha").textContent="Адрес: "+(h.a||"не указан");
+document.getElementById("ht").innerHTML=h.t?("Телефон: <a href='tel:"+h.t+"' style='color:#f3e0b8'>"+h.t+"</a>"):"Телефон: уточнить";
 document.getElementById("hrep").textContent=rub(h.p);
-document.getElementById("hstay").textContent=rub(stay(h));
-document.getElementById("hp").src=h.img||PHOTOS[i%PHOTOS.length];
+document.getElementById("hstay").textContent=rub(h.s||h.p);
+document.getElementById("hp").src=h.img||PHOTOS[0];
+var eo=document.getElementById("editOpen");
+var adm=user()&&user().admin;
+eo.style.display=adm?"inline-block":"none";
+eo.onclick=function(){ document.getElementById("m").classList.remove("show"); editHotel(i); };
 document.getElementById("m").classList.add("show");
+}
+function editHotel(i){
+if(!(user()&&user().admin)) return;
+editI=i; var h=i>=0?hotels()[i]:{n:"",a:"",t:"",p:"",s:"",img:""};
+document.getElementById("edTitle").textContent=i>=0?"Правка":"Новая гостиница";
+document.getElementById("en").value=h.n||""; document.getElementById("ea").value=h.a||"";
+document.getElementById("et").value=h.t||""; document.getElementById("ep").value=h.p||"";
+document.getElementById("es").value=h.s||h.p||""; document.getElementById("ei").value=h.img||"";
+document.getElementById("ed").classList.add("show");
+}
+function saveHotel(){
+var arr=hotels();
+var row={n:document.getElementById("en").value.trim(), a:document.getElementById("ea").value.trim(), t:document.getElementById("et").value.trim(), p:+document.getElementById("ep").value||0, s:+document.getElementById("es").value||0, img:document.getElementById("ei").value.trim()};
+if(editI>=0) arr[editI]=Object.assign({}, arr[editI], row); else arr.push(row);
+setHotels(arr); document.getElementById("ed").classList.remove("show"); draw();
 }
 function draw(){
 var q=(document.getElementById("q").value||"").toLowerCase();
-var html="";
-(window.HOTELS||[]).forEach(function(h,i){
+var adm=user()&&user().admin, html="", rows=hotels();
+rows.forEach(function(h,i){
 if(q && (h.n+" "+(h.a||"")).toLowerCase().indexOf(q)<0) return;
-html+="<tr><td><button class='name' type='button' onclick='openHotel("+i+")'>"+h.n+"</button></td><td>"+(h.a||"—")+"</td><td class='price'>"+Number(h.p).toLocaleString("ru-RU")+"</td></tr>";
+html+="<tr><td><button class='name' type='button' onclick='openHotel("+i+")'>"+h.n+"</button></td><td>"+(h.a||"—")+"</td><td class='price'>"+Number(h.p||0).toLocaleString("ru-RU")+"</td><td>"+(adm?"<button class='btn' type='button' onclick='editHotel("+i+")'>Изменить</button>":"")+"</td></tr>";
 });
-document.getElementById("tb").innerHTML=html||"<tr><td colspan='3'>Нет совпадений</td></tr>";
+document.getElementById("tb").innerHTML=html||"<tr><td colspan='4'>Нет совпадений</td></tr>";
 }
-document.getElementById("q").oninput=draw;draw();
+document.getElementById("q").oninput=draw;
+if(user()) showApp();
 </script>
 </body></html>
