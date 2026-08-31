@@ -52,7 +52,11 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 <button class="btn" type="button" onclick="window.print()">Печать</button>
 <button class="btn" type="button" onclick="out()">Выйти</button></div>
 <h1>Гостиницы</h1>
-<p class="lead">Фильтр по городу и поиск. Нажми на название — карточка.</p>
+<p class="lead">Фильтр по городу и поиск. Нажми на название — карточка. Кнопка «Я здесь» — коллеги видят, где ты сегодня.</p>
+<div class="card" id="hereBox" style="margin-bottom:14px">
+<b>Сегодня на местах</b>
+<p class="lead" id="hereList" style="margin:8px 0 0">Загрузка…</p>
+</div>
 <div class="card" style="margin-bottom:14px"><div class="filters">
 <div><label class="l" style="margin-top:0">Поиск</label><input id="q" placeholder="Название или адрес"></div>
 <div><label class="l" style="margin-top:0">Город</label><select id="city"><option value="">Все города</option></select></div>
@@ -71,7 +75,8 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 <div class="box"><b>В отчёт</b><span id="hrep"></span></div>
 <div class="box"><b>Проживание</b><span id="hstay"></span></div>
 </div>
-<div style="margin-top:16px"><button class="btn" type="button" onclick="document.getElementById('m').classList.remove('show')">Закрыть</button>
+<div style="margin-top:16px"><button class="btn" type="button" onclick="imHere()">Я здесь сегодня</button>
+<button class="btn" type="button" onclick="document.getElementById('m').classList.remove('show')">Закрыть</button>
 <button class="btn" type="button" id="editOpen" style="display:none">Править</button></div>
 </div></div></div>
 <div class="modal" id="ed" onclick="if(event.target===this)this.classList.remove('show')">
@@ -88,7 +93,7 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 <button class="btn" type="button" onclick="document.getElementById('ed').classList.remove('show')">Отмена</button></div>
 </div></div></div>
 <script>
-var KEY="mm_user", HKEY="mm_hotels", editI=-1;
+var KEY="mm_user", HKEY="mm_hotels", editI=-1, HERE_API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0", hereHotel="";
 var PHOTOS=["https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=60"];
 var KNOWN=[["екатеринбург","Екатеринбург"],["новосибирск","Новосибирск"],["барнаул","Барнаул"],["бийск","Бийск"],["новоалтайск","Новоалтайск"],["омск","Омск"],["перм","Пермь"],["кунгур","Кунгур"],["москв","Москва"],["петербург","Санкт-Петербург"],["с-петербург","Санкт-Петербург"],["волгоград","Волгоград"],["саратов","Саратов"],["владимир","Владимир"],["муром","Муром"],["коломн","Коломна"],["мурманск","Мурманск"],["северодвинск","Северодвинск"],["йошкар","Йошкар-Ола"],["мамадыш","Мамадыш"],["сызрань","Сызрань"],["барабинск","Барабинск"],["тюкалинск","Тюкалинск"],["очер","Очер"],["тейково","Тейково"],["шахты","Шахты"],["дивеево","Дивеево"],["посад","Сергиев Посад"],["плесецк","Плесецк"],["мирный","Мирный"],["знаменск","Знаменск"],["нижняя тура","Нижняя Тура"],["вязники","Вязники"],["кугеси","Кугеси"],["ярослав","Ярославль"],["исаково","Исаково"],["воротынец","Воротынец"],["дзержин","Дзержинск"],["дружинино","Дружинино"],["менделеев","Менделеевск"],["татарстан","Татарстан"]];
 function norm(s){return String(s||"").trim().toLowerCase().replace(/ё/g,"е");}
@@ -121,6 +126,26 @@ var names=Object.keys(set).sort(function(a,b){return a.localeCompare(b,"ru");});
 sel.innerHTML="<option value=''>Все города</option>"+names.map(function(n){return "<option>"+n+"</option>";}).join("");
 if(cur) sel.value=cur;
 }
+function hereUrl(extra){return HERE_API+"?path=/here"+(extra||"");}
+async function loadHere(){
+  var box=document.getElementById("hereList"); if(!box) return;
+  try{
+    var j=await (await fetch(hereUrl())).json();
+    var rows=j.people||[];
+    if(!rows.length){box.textContent="Пока никто не отметился.";}
+    else box.innerHTML=rows.map(function(p){return "<div style='margin-top:6px'><b>"+p.name+"</b> — "+p.hotel+(p.city?(" · "+p.city):"")+"</div>";}).join("");
+  }catch(e){box.textContent="Доска недоступна (облако).";}
+}
+async function imHere(){
+  var u=user(); if(!u) return;
+  var h=hereHotel; if(!h) return;
+  try{
+    await fetch(hereUrl("&action=set&login="+encodeURIComponent(u.login)+"&name="+encodeURIComponent(u.name)+"&hotel="+encodeURIComponent(h.n)+"&city="+encodeURIComponent(cityOf(h))));
+    document.getElementById("m").classList.remove("show");
+    loadHere();
+    alert("Коллеги видят: "+u.name+" сегодня в «"+h.n+"»");
+  }catch(e){alert("Не удалось отметить");}
+}
 function showApp(){
 var u=user(); if(!u) return;
 document.getElementById("gate").style.display="none";
@@ -143,6 +168,7 @@ var eo=document.getElementById("editOpen");
 var adm=user()&&user().admin;
 eo.style.display=adm?"inline-block":"none";
 eo.onclick=function(){ document.getElementById("m").classList.remove("show"); editHotel(i); };
+hereHotel=h;
 document.getElementById("m").classList.add("show");
 }
 function editHotel(i){
@@ -174,5 +200,7 @@ document.getElementById("tb").innerHTML=html||"<tr><td colspan='5'>Нет сов
 document.getElementById("q").oninput=draw;
 document.getElementById("city").onchange=draw;
 if(user()) showApp();
+loadHere();
+setInterval(loadHere, 30000);
 </script>
 </body></html>
