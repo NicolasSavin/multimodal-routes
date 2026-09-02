@@ -35,6 +35,7 @@ function playSiren(){
   }, 7000);
 }
 function ensureUi(){
+  if(!user()) return;
   if(document.getElementById("sosBtn")) return;
   var st=document.createElement("style");
   st.textContent="#sosBtn{position:fixed;right:16px;bottom:16px;z-index:80;border:0;border-radius:999px;padding:14px 18px;font:700 14px Manrope,system-ui;color:#fff;background:linear-gradient(180deg,#ff4d4d,#9b1010);box-shadow:0 10px 30px rgba(180,0,0,.45);cursor:pointer}#sosMask{display:none;position:fixed;inset:0;z-index:90;background:rgba(120,0,0,.88);color:#fff;align-items:center;justify-content:center;text-align:center;padding:24px}#sosMask.show{display:flex;animation:sosPulse 1s infinite}#sosMask .box{max-width:520px}#sosMask h2{font-size:42px;margin:0 0 8px;letter-spacing:.08em}#sosMask button{margin:8px;padding:12px 16px;border-radius:999px;border:0;font:700 14px Manrope,system-ui;cursor:pointer}@keyframes sosPulse{0%,100%{background:rgba(140,0,0,.92)}50%{background:rgba(220,20,20,.92)}}";
@@ -53,6 +54,7 @@ function ensureUi(){
 function showSos(row){
   ensureUi();
   var mask=document.getElementById("sosMask");
+  if(!mask) return;
   document.getElementById("sosWho").textContent=(row.name||row.login||"Сотрудник")+" \u00b7 "+(row.note||"нажал SOS");
   mask.classList.add("show");
   if(!localMute) playSiren();
@@ -64,6 +66,7 @@ function hideSos(){
   sosOn=false;
 }
 async function pollSos(){
+  if(!user()) return;
   ensureUi();
   try{
     var j=await (await fetch(api("/sos"))).json();
@@ -90,6 +93,6 @@ async function clearSos(){
 }
 ensureUi();
 pollSos();
-setInterval(pollSos, 4000);
+setInterval(function(){ if(user()){ ensureUi(); pollSos(); } }, 4000);
 window.NTC_SOS={pollSos:pollSos,sendSos:sendSos,clearSos:clearSos,api:api,user:user};
 })();
