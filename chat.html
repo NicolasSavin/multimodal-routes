@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Чат · командировки</title>
+<title>НТЦ Охрана · помощник</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
 <script src="users.js"></script>
 <style>
@@ -35,7 +35,7 @@ input.g{width:100%;margin-top:8px;border:1px solid var(--line);background:#1a140
 <div id="gate" class="wrap">
 <div class="panel" style="max-width:420px;margin:48px auto;width:100%">
 <div class="hat">НТЦ Охрана · вход</div>
-<h1 style="font-size:28px;margin-top:8px">Чат стола</h1>
+<h1 style="font-size:28px;margin-top:8px">Помощник командировок</h1>
 <p class="sub">Логин — фамилия. Пароль — 8 цифр даты рождения.</p>
 <input class="g" id="login" placeholder="Логин"><input class="g" id="pass" type="password" placeholder="Пароль">
 <p class="err" id="err"></p>
@@ -49,11 +49,11 @@ input.g{width:100%;margin-top:8px;border:1px solid var(--line);background:#1a140
 <a href="team.html">Чат охраны</a>
 <button class="ghost" type="button" onclick="out()">Выйти</button>
 </div>
-<div class="hat"><span>ЧАТ · смотрю командировку</span><span id="who"></span></div>
-<h1>Стол поездок</h1>
-<p class="sub">Диспетчер по командировкам: маршрут по ногам, купе, нижние, гостиница. Не приказ купить билет.</p>
+<div class="hat"><span>НТЦ ОХРАНА · командировки</span><span id="who"></span></div>
+<h1>Помощник поездок</h1>
+<p class="sub">Команда охрана грузов. Поезд, автобус, купе, гостиница. Билеты здесь не покупают — только карта маршрута.</p>
 <div class="panel">
-<div class="hat">ЭФИР · справка</div>
+<div class="hat">справка по командировке</div>
 <div class="log" id="log"></div>
 <div class="chips">
 <button type="button" onclick="ask('Ижевск — Барнаул')">Ижевск — Барнаул</button>
@@ -62,7 +62,7 @@ input.g{width:100%;margin-top:8px;border:1px solid var(--line);background:#1a140
 <button type="button" onclick="ask('кто где сегодня')">Кто где</button>
 <button type="button" onclick="ask('сапсан и автобус')">Сапсан / автобус</button>
 </div>
-<div class="bar"><input id="q" placeholder="Спросите как на столе: откуда куда, купе, гостинка"><button class="go" type="button" onclick="send()">Спросить</button></div>
+<div class="bar"><input id="q" placeholder="Откуда куда, купе, гостинка"><button class="go" type="button" onclick="send()">Спросить</button></div>
 </div>
 </div>
 <script>
@@ -83,16 +83,16 @@ var d=document.createElement("div"); d.className="msg "+(me?"me":"bot"); d.inner
 function brief(q){
 q=norm(q);
 if(/ижевск|барнаул|агрыз|новосибир/.test(q))
-return "<b>КАРТА МАРШРУТА</b>Ижевск → Барнаул. Прямого поезда часто нет.<div class='cardx'><b>1. Нога</b>Электричка Ижевск → Агрыз</div><div class='cardx'><b>2. Поезд</b>Агрыз → Новосибирск, фильтр купе/нижние</div><div class='cardx'><b>3. Автобус</b>Новосибирск → Барнаул. Меньше пересадок — выше в списке.</div>Откройте главную и поставьте эти города.";
+return "<b>КАРТА МАРШРУТА</b>Ижевск → Барнаул. Прямого поезда часто нет.<div class='cardx'><b>1. Нога</b>Электричка Ижевск → Агрыз</div><div class='cardx'><b>2. Поезд</b>Агрыз → Новосибирск, фильтр купе/нижние</div><div class='cardx'><b>3. Автобус</b>Новосибирск → Барнаул.</div>";
 if(/купе|нижн|мест|вагон/.test(q))
 return "<b>МЕСТА</b>Фильтры: одно купе · только нижние · одно купе и нижние · любые.";
 if(/гостин|отел|дилижан/.test(q))
-return "<b>ГОСТИНИЦА</b>Раздел Гостиницы — фильтр по городу. В карточке адрес, телефон, цена и кто сегодня в этой гостинке.";
+return "<b>ГОСТИНИЦА</b>Раздел Гостиницы — фильтр по городу.";
 if(/кто где|отмет|коллег/.test(q))
-return "<b>СОСТАВ</b>Общий список — страница Кто где. Чтобы появиться — карточка гостиницы → Я здесь сегодня.";
+return "<b>СОСТАВ</b>Страница Кто где. Отметка — в карточке гостиницы.";
 if(/сапсан|автобус|фильтр рейс/.test(q))
 return "<b>РЕЙС</b>Фильтр: сапсан · поезд · автобус · поезд+автобус.";
-return "<b>СТОЛ</b>Спросите конкретно: города, купе, сапсан, гостиница, кто где.";
+return "<b>НТЦ ОХРАНА</b>Спросите города, купе, гостиницу или кто где.";
 }
 function ask(t){ document.getElementById("q").value=t; send(); }
 async function send(){
@@ -110,9 +110,9 @@ var u=user(); if(!u) return;
 document.getElementById("gate").style.display="none";
 document.getElementById("app").style.display="flex";
 document.getElementById("who").textContent=u.name;
-add("<b>СТОЛ</b>Живая нейросеть подключена. Спрашивайте маршрут, места, гостиницу.", false);
+add("<b>НТЦ ОХРАНА</b>Помощник командировок. Спрашивайте маршрут, места, гостиницу.", false);
 }
 if(user()) show();
 </script>
-<script src="team.js"></script>
+<script src="team.js?v=2"></script>
 </body></html>
