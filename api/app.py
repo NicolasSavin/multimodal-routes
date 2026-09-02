@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from datetime import datetime, timedelta
@@ -446,6 +447,156 @@ def trains():
             "rzd_enabled": RZD_ON,
         }
     )
+
+
+HERE_FILE = "/tmp/here.json"
+TALK_FILE = "/tmp/talk.json"
+SOS_FILE = "/tmp/sos.json"
+
+
+def today():
+    return datetime.now().strftime("%Y-%m-%d")
+
+
+def _jload(path, default):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _jsave(path, obj):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, ensure_ascii=False)
+
+
+def here_load():
+    data = _jload(HERE_FILE, {})
+    if data.get("date") != today():
+        return []
+    return data.get("people") or []
+
+
+def here_save(rows):
+    _jsave(HERE_FILE, {"date": today(), "people": rows})
+
+
+@app.get("/here")
+def here():
+    action = (request.args.get("action") or "list").strip()
+    rows = here_load()
+    if action == "clear":
+        login = (request.args.get("login") or "").strip().lower()
+        rows = [x for x in rows if x.get("login") != login]
+        here_save(rows)
+        return jsonify({"ok": True, "people": rows})
+    if action == "set":
+        login = (request.args.get("login") or "").strip().lower()
+        name = (request.args.get("name") or login).strip()
+        hotel = (request.args.get("hotel") or "").strip()
+        city = (request.args.get("city") or "").strip()
+        if not login or not hotel:
+            return jsonify({"ok": False, "error": "login, hotel"}), 400
+        rows = [x for x in rows if x.get("login") != login]
+        rows.append(
+            {
+                "login": login,
+                "name": name,
+                "hotel": hotel,
+                "city": city,
+                "date": today(),
+                "ts": int(time.time()),
+            }
+        )
+        here_save(rows)
+        return jsonify({"ok": True, "people": rows})
+    return jsonify({"ok": True, "date": today(), "people": rows})
+
+
+@app.get("/chat")
+def chat():
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"ok": False, "error": "q"}), 400
+    key = os.environ.get("YANDEX_GPT_KEY") or ""
+    folder = os.environ.get("YANDEX_FOLDER") or "b1gsp17rfc7eqhdk6413"
+    if not key:
+        return jsonify({"ok": False, "text": "", "err": "no YANDEX_GPT_KEY"})
+    sys = "Ты помощник по командировкам НТЦ Охрана. Отвечай кратко по-русски."
+    r = requests.post(
+        "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+        headers={"Authorization": "Api-Key " + key, "Content-Type": "application/json"},
+        json={
+            "modelUri": "gpt://" + folder + "/yandexgpt-lite",
+            "completionOptions": {"stream": False, "temperature": 0.3, "maxTokens": "600"},
+            "messages": [
+                {"role": "system", "text": sys},
+                {"role": "user", "text": q},
+            ],
+        },
+        timeout=25,
+    )
+    text = ""
+    err = ""
+    try:
+        js = r.json()
+        text = js["result"]["alternatives"][0]["message"]["text"]
+    except Exception:
+        err = (r.text or "")[:400]
+    return jsonify({"ok": bool(text), "text": text, "status": r.status_code, "err": err})
+
+
+@app.get("/talk")
+@app.post("/talk")
+def talk():
+    data = request.get_json(silent=True) or {}
+    action = (data.get("action") or request.args.get("action") or "list").strip()
+    rows = _jload(TALK_FILE, [])
+    if action == "send":
+        login = (data.get("login") or request.args.get("login") or "").strip().lower()
+        name = (data.get("name") or request.args.get("name") or login).strip()
+        text = (data.get("text") or request.args.get("text") or "").strip()
+        media = data.get("media") or ""
+        kind = data.get("kind") or ""
+        if media and len(str(media)) > 1200000:
+            return jsonify({"ok": False, "error": "file too big"}), 400
+        if not login or (not text and not media):
+            return jsonify({"ok": False, "error": "empty"}), 400
+        rows.append(
+            {
+                "login": login,
+                "name": name,
+                "text": text[:2000],
+                "media": media,
+                "kind": kind,
+                "ts": int(time.time()),
+            }
+        )
+        rows = rows[-60:]
+        _jsave(TALK_FILE, rows)
+    return jsonify({"ok": True, "messages": rows})
+
+
+@app.get("/sos")
+@app.post("/sos")
+def sos():
+    data = request.get_json(silent=True) or {}
+    action = (data.get("action") or request.args.get("action") or "list").strip()
+    cur = _jload(SOS_FILE, {"on": False})
+    if action == "set":
+        cur = {
+            "on": True,
+            "login": (data.get("login") or request.args.get("login") or "").strip().lower(),
+            "name": (data.get("name") or request.args.get("name") or "").strip(),
+            "note": (data.get("note") or request.args.get("note") or "").strip()[:300],
+            "ts": int(time.time()),
+        }
+        _jsave(SOS_FILE, cur)
+    elif action == "clear":
+        cur = {"on": False, "ts": int(time.time())}
+        _jsave(SOS_FILE, cur)
+    return jsonify({"ok": True, "sos": cur})
 
 
 if __name__ == "__main__":
