@@ -129,12 +129,19 @@ if(cur) sel.value=cur;
 function hereUrl(extra){return HERE_API+"?path=/here"+(extra||"");}
 async function loadHere(){
   var box=document.getElementById("hereList"); if(!box) return;
+  var staff=(window.HOTEL_USERS||[]).slice();
+  var byLogin={};
   try{
     var j=await (await fetch(hereUrl())).json();
-    var rows=j.people||[];
-    if(!rows.length){box.textContent="Пока никто не отметился.";}
-    else box.innerHTML=rows.map(function(p){return "<div style='margin-top:6px'><b>"+p.name+"</b> — "+p.hotel+(p.city?(" · "+p.city):"")+"</div>";}).join("");
-  }catch(e){box.textContent="Доска недоступна (облако).";}
+    (j.people||[]).forEach(function(p){ byLogin[String(p.login||"").toLowerCase()]=p; });
+  }catch(e){}
+  var on=[], off=[];
+  staff.forEach(function(u){
+    var p=byLogin[norm(u.login)];
+    if(p&&p.hotel) on.push("<div style='margin-top:6px'><b>"+(u.name||u.login)+"</b> — "+p.hotel+(p.city?(" · "+p.city):"")+"</div>");
+    else off.push("<div style='margin-top:6px;color:#8ea0b3'><b>"+(u.name||u.login)+"</b> — не отметился</div>");
+  });
+  box.innerHTML="<div style='margin-bottom:8px'>На местах: "+on.length+" · не отметились: "+off.length+"</div>"+(on.join("")||"<div style='margin-top:6px'>Пока никто не нажал «Я здесь».</div>")+"<div style='margin-top:12px;font-size:12px;color:#d4b483;letter-spacing:.08em;text-transform:uppercase'>Весь список</div>"+off.join("");
 }
 async function imHere(){
   var u=user(); if(!u) return;
