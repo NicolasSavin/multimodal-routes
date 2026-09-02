@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Помощник</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="users.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018}
+.bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1000px 500px at 0% 0%,#1c4f7a,transparent 55%),radial-gradient(800px 400px at 100% 0%,#7a4a18,transparent 50%),#071018}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:20px 16px 24px;min-height:100vh;display:flex;flex-direction:column}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.nav a,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
+h1{margin:0 0 6px;font-size:28px}.lead{color:#b7c6d6;margin:0 0 12px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:16px}
+input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit;margin-top:8px}
+.err{color:#f3b4b4}
+.log{flex:1;min-height:360px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px}
+.msg{max-width:85%;padding:10px 12px;border-radius:16px;line-height:1.45;font-size:15px;white-space:pre-wrap}
+.bot{align-self:flex-start;background:rgba(255,255,255,.07)}
+.me{align-self:flex-end;background:linear-gradient(180deg,#f6e2b4,#c8943c);color:#1a1206}
+.bar{display:flex;gap:8px;margin-top:10px}
+.bar input{margin:0}
+.go{border:0;cursor:pointer;padding:13px 18px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c)}
+</style></head>
+<body>
+<div class="bg"></div>
+<div id="gate" class="wrap">
+<div class="card" style="max-width:420px;margin:40px auto;width:100%">
+<h1>Вход</h1>
+<p class="lead">Чат только для сотрудников.</p>
+<input id="login" placeholder="Логин"><input id="pass" type="password" placeholder="Пароль">
+<p class="err" id="err"></p>
+<button class="btn" type="button" style="margin-top:14px" onclick="enter()">Войти</button>
+</div></div>
+<div id="app" class="wrap" style="display:none">
+<div class="nav"><a href="index.html">Маршруты</a><a href="hotels.html">Гостиницы</a><a href="where.html">Кто где</a><button class="btn" type="button" onclick="out()">Выйти</button></div>
+<h1>Помощник</h1>
+<p class="lead">Спросите маршрут, гостиницу, купе, кто где.</p>
+<div class="card log" id="log"></div>
+<div class="bar"><input id="q" placeholder="Напишите вопрос"><button class="go" type="button" onclick="send()">Отправить</button></div>
+</div>
+<script>
+var KEY="mm_user", API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
+function norm(s){return String(s||"").trim().toLowerCase().replace(/ё/g,"е");}
+function user(){ try{return JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){return null;} }
+function enter(){
+var l=norm(document.getElementById("login").value), p=String(document.getElementById("pass").value||"").trim();
+var u=(window.HOTEL_USERS||[]).find(function(x){return norm(x.login)===l && String(x.pass)===p;});
+if(!u){document.getElementById("err").textContent="Неверный логин или пароль"; return;}
+localStorage.setItem(KEY, JSON.stringify({login:u.login, admin:!!u.admin, name:u.name||u.login}));
+show();
+}
+function out(){ localStorage.removeItem(KEY); location.reload(); }
+function add(text, me){
+var d=document.createElement("div"); d.className="msg "+(me?"me":"bot"); d.textContent=text; document.getElementById("log").appendChild(d); d.scrollIntoView();
+}
+function localAns(q){
+q=norm(q);
+if(/кто где|отмет|на мест/.test(q)) return "Откройте страницу Кто где. Чтобы вас увидели — гостиница → карточка → Я здесь сегодня.";
+if(/гостин|отел|ночлег/.test(q)) return "Список гостиниц: раздел Гостиницы. Фильтр по городу, в карточке адрес, телефон и цена в отчёт.";
+if(/купе|нижн|мест/.test(q)) return "В поиске маршрута выберите фильтр мест: одно купе, только нижние или оба. Схема — кнопка Вагоны и купе. Касса не всегда отдаёт места, если продажа ещё не открыта.";
+if(/сапсан|автобус|поезд|маршрут|пересад|агрыз|барнаул|ижевск/.test(q)) return "Маршруты: главная страница. Ижевск → Барнаул часто через Агрыз и Новосибирск (поезд + автобус). Фильтр рейсов: сапсан, поезд, автобус, поезд и автобус.";
+return "Могу подсказать по сайту: маршруты, купе/нижние, гостиницы, кто где сегодня. Напишите короче, что нужно.";
+}
+async function send(){
+var inp=document.getElementById("q"); var q=inp.value.trim(); if(!q) return;
+inp.value=""; add(q,true);
+try{
+var j=await (await fetch(API+"?path=/chat&q="+encodeURIComponent(q))).json();
+if(j && j.text){ add(j.text,false); return; }
+}catch(e){}
+add(localAns(q),false);
+}
+document.getElementById("q").addEventListener("keydown", function(e){ if(e.key==="Enter") send(); });
+function show(){
+document.getElementById("gate").style.display="none";
+document.getElementById("app").style.display="flex";
+add("Пишите свободно. Пока это помощник по сайту. Полную нейросеть можно включить через YandexGPT в том же облаке.", false);
+}
+if(user()) show();
+</script>
+</body></html>
