@@ -1,29 +1,38 @@
 (function(){
 var API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
-var sirenCtx=null, sirenNodes=[], sosOn=false, lastSosTs=0, localMute=false;
+var sirenCtx=null, sirenNodes=[], sosOn=false, lastSosTs=0, localMute=false, sirenLoop=null;
 function user(){ try{return JSON.parse(localStorage.getItem("mm_user")||"null");}catch(e){return null;} }
 function api(path){ return API+"?path="+path; }
 function stopSiren(){
+  if(sirenLoop){ clearInterval(sirenLoop); sirenLoop=null; }
   sirenNodes.forEach(function(n){ try{n.stop();}catch(e){} });
   sirenNodes=[];
   if(sirenCtx){ try{sirenCtx.close();}catch(e){} sirenCtx=null; }
 }
-function playSiren(){
-  stopSiren();
+function burst(){
   var Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
-  sirenCtx=new Ctx();
+  if(!sirenCtx || sirenCtx.state==="closed") sirenCtx=new Ctx();
+  if(sirenCtx.state==="suspended") sirenCtx.resume();
   var t=sirenCtx.currentTime;
-  for(var i=0;i<40;i++){
+  for(var i=0;i<24;i++){
     var o=sirenCtx.createOscillator(), g=sirenCtx.createGain();
     o.type="sawtooth";
-    o.frequency.setValueAtTime(i%2?880:520, t+i*0.35);
-    g.gain.setValueAtTime(0.0001, t+i*0.35);
-    g.gain.exponentialRampToValueAtTime(0.18, t+i*0.35+0.05);
-    g.gain.exponentialRampToValueAtTime(0.0001, t+i*0.35+0.33);
+    o.frequency.setValueAtTime(i%2?920:480, t+i*0.28);
+    g.gain.setValueAtTime(0.0001, t+i*0.28);
+    g.gain.exponentialRampToValueAtTime(0.2, t+i*0.28+0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+i*0.28+0.26);
     o.connect(g); g.connect(sirenCtx.destination);
-    o.start(t+i*0.35); o.stop(t+i*0.35+0.34);
+    o.start(t+i*0.28); o.stop(t+i*0.28+0.27);
     sirenNodes.push(o);
   }
+}
+function playSiren(){
+  stopSiren();
+  burst();
+  sirenLoop=setInterval(function(){
+    if(!sosOn || localMute){ stopSiren(); return; }
+    burst();
+  }, 7000);
 }
 function ensureUi(){
   if(document.getElementById("sosBtn")) return;
@@ -36,7 +45,7 @@ function ensureUi(){
   document.body.appendChild(b);
   var m=document.createElement("div");
   m.id="sosMask";
-  m.innerHTML="<div class='box'><h2>ТРЕВОГА</h2><p id='sosWho'></p><p>Сигнал слышен у всех, у кого открыт сайт.</p><button type='button' id='sosMute'>Выключить звук у себя</button><button type='button' id='sosOff'>Снять тревогу у всех</button></div>";
+  m.innerHTML="<div class='box'><h2>ТРЕВОГА</h2><p id='sosWho'></p><p>Сигнал идёт, пока его не снимут.</p><button type='button' id='sosMute'>Выключить звук у себя</button><button type='button' id='sosOff'>Снять тревогу у всех</button></div>";
   document.body.appendChild(m);
   document.getElementById("sosMute").onclick=function(){ localMute=true; stopSiren(); };
   document.getElementById("sosOff").onclick=function(){ clearSos(); };
@@ -72,7 +81,7 @@ async function sendSos(){
   try{
     await fetch(api("/sos")+"&action=set&login="+encodeURIComponent(u.login)+"&name="+encodeURIComponent(u.name||u.login)+"&note="+encodeURIComponent(note));
     pollSos();
-  }catch(e){ alert("Не удалось отправить SOS. Залейте код /sos в облако."); }
+  }catch(e){ alert("Не удалось отправить SOS."); }
 }
 async function clearSos(){
   var u=user()||{login:"guest"};
