@@ -68,6 +68,7 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 <p class="meta" id="hc"></p>
 <p class="meta" id="ha"></p>
 <p class="meta" id="ht"></p>
+<p class="meta" id="hereIn"></p>
 <div class="prices">
 <div class="box"><b>В отчёт</b><span id="hrep"></span></div>
 <div class="box"><b>Проживание</b><span id="hstay"></span></div>
@@ -136,9 +137,8 @@ async function imHere(){
   var h=hereHotel; if(!h) return;
   try{
     await fetch(hereUrl("&action=set&login="+encodeURIComponent(u.login)+"&name="+encodeURIComponent(u.name)+"&hotel="+encodeURIComponent(h.n)+"&city="+encodeURIComponent(cityOf(h))));
-    document.getElementById("m").classList.remove("show");
     loadHere();
-    alert("Коллеги видят: "+u.name+" сегодня в «"+h.n+"»");
+    fillHereIn(h);
   }catch(e){alert("Не удалось отметить");}
 }
 function showApp(){
@@ -164,7 +164,18 @@ var adm=user()&&user().admin;
 eo.style.display=adm?"inline-block":"none";
 eo.onclick=function(){ document.getElementById("m").classList.remove("show"); editHotel(i); };
 hereHotel=h;
+document.getElementById("hereIn").textContent="Кто здесь: загрузка…";
 document.getElementById("m").classList.add("show");
+fillHereIn(h);
+}
+async function fillHereIn(h){
+  var el=document.getElementById("hereIn"); if(!el||!h) return;
+  try{
+    var j=await (await fetch(hereUrl())).json();
+    var want=norm(h.n);
+    var names=(j.people||[]).filter(function(p){return norm(p.hotel)===want || norm(p.hotel).indexOf(want)>=0 || want.indexOf(norm(p.hotel))>=0;}).map(function(p){return p.name||p.login;});
+    el.textContent=names.length?("Сегодня здесь: "+names.join(", ")): "Сегодня здесь никто не отметился";
+  }catch(e){el.textContent="";}
 }
 function editHotel(i){
 if(!(user()&&user().admin)) return;
