@@ -47,16 +47,13 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 </div>
 </div>
 <div id="app" class="wrap" style="display:none">
-<div class="nav"><a href="index.html">Маршруты</a><span id="who"></span>
+<div class="nav"><a href="index.html">Маршруты</a><a href="where.html">Кто где</a><span id="who"></span>
 <button class="btn" type="button" id="addBtn" style="display:none" onclick="editHotel(-1)">Добавить</button>
 <button class="btn" type="button" onclick="window.print()">Печать</button>
 <button class="btn" type="button" onclick="out()">Выйти</button></div>
 <h1>Гостиницы</h1>
 <p class="lead">Фильтр по городу и поиск. Нажми на название — карточка. Кнопка «Я здесь» — коллеги видят, где ты сегодня.</p>
-<div class="card" id="hereBox" style="margin-bottom:14px">
-<b>Сегодня на местах</b>
-<p class="lead" id="hereList" style="margin:8px 0 0">Загрузка…</p>
-</div>
+<p class="lead" id="hereLine" style="margin:0 0 14px"><a href="where.html" style="color:#f3e0b8">Кто где сегодня</a></p>
 <div class="card" style="margin-bottom:14px"><div class="filters">
 <div><label class="l" style="margin-top:0">Поиск</label><input id="q" placeholder="Название или адрес"></div>
 <div><label class="l" style="margin-top:0">Город</label><select id="city"><option value="">Все города</option></select></div>
@@ -128,20 +125,11 @@ if(cur) sel.value=cur;
 }
 function hereUrl(extra){return HERE_API+"?path=/here"+(extra||"");}
 async function loadHere(){
-  var box=document.getElementById("hereList"); if(!box) return;
-  var staff=(window.HOTEL_USERS||[]).slice();
-  var byLogin={};
+  var el=document.getElementById("hereLine"); if(!el) return;
   try{
     var j=await (await fetch(hereUrl())).json();
-    (j.people||[]).forEach(function(p){ byLogin[String(p.login||"").toLowerCase()]=p; });
+    el.innerHTML="<a href='where.html' style='color:#f3e0b8'>Кто где сегодня</a> · на местах "+((j.people||[]).length);
   }catch(e){}
-  var on=[], off=[];
-  staff.forEach(function(u){
-    var p=byLogin[norm(u.login)];
-    if(p&&p.hotel) on.push("<div style='margin-top:6px'><b>"+(u.name||u.login)+"</b> — "+p.hotel+(p.city?(" · "+p.city):"")+"</div>");
-    else off.push("<div style='margin-top:6px;color:#8ea0b3'><b>"+(u.name||u.login)+"</b> — не отметился</div>");
-  });
-  box.innerHTML="<div style='margin-bottom:8px'>На местах: "+on.length+" · не отметились: "+off.length+"</div>"+(on.join("")||"<div style='margin-top:6px'>Пока никто не нажал «Я здесь».</div>")+"<div style='margin-top:12px;font-size:12px;color:#d4b483;letter-spacing:.08em;text-transform:uppercase'>Весь список</div>"+off.join("");
 }
 async function imHere(){
   var u=user(); if(!u) return;
