@@ -8,10 +8,11 @@
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018;min-height:100vh}
 .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1200px 600px at 10% -10%,#1c4f7a 0%,transparent 55%),radial-gradient(900px 500px at 100% 0%,#7a4a18 0%,transparent 50%),linear-gradient(165deg,#05080d,#0c1a2b 48%,#122033)}
 .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:28px 18px 64px}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:10px;flex-wrap:wrap}.links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d7a0,#b8893a);display:grid;place-items:center;font-weight:800;color:#2a1a05}
 .brand{display:flex;gap:12px;align-items:center}.brand b{display:block;letter-spacing:.18em;font-size:11px;color:#d4b483}.brand span{font-size:13px;color:#9fb0c3}
 .nav a{color:#f3e0b8;text-decoration:none;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18)}
+.nav a.ai{background:linear-gradient(180deg,#f6e2b4,#c8943c);color:#1a1206;font-weight:700;border-color:transparent}
 .hero h1{font-size:clamp(28px,5vw,46px);line-height:1.08;margin:0 0 10px;font-weight:800}
 .hero h1 em{font-style:normal;background:linear-gradient(90deg,#fff,#f3e0b8,#c9974a);-webkit-background-clip:text;color:transparent}
 .hero p{margin:0 0 22px;color:#b7c6d6}.org{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6e7d8c;margin:0 0 8px;font-weight:500}
@@ -45,7 +46,7 @@ a.map{color:#f3e0b8}
 <body>
 <div class="bg"></div>
 <div class="wrap">
-<div class="nav"><div class="brand"><div class="mark">Н</div><div><b>МУЛЬТИМОДАЛЬНЫЙ</b><span>НТЦ Охрана</span></div></div><a href="hotels.html">Гостиницы</a></div>
+<div class="nav"><div class="brand"><div class="mark">Н</div><div><b>МУЛЬТИМОДАЛЬНЫЙ</b><span>НТЦ Охрана</span></div></div><div class="links"><a class="ai" href="chat.html">ИИ помощник</a><a href="hotels.html">Гостиницы</a></div></div>
 <section class="hero"><h1>Мультимодальный<br><em>маршрут</em></h1><p class="org">Команда охрана грузов · НТЦ Охрана</p><p>Поезд и автобус. Если прямого нет — пересадка, места автобуса на Туту и Busfor.</p></section>
 <form id="f" class="card" autocomplete="off">
 <div class="grid2">
