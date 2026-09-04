@@ -34,19 +34,20 @@ h1{font-family:"Playfair Display",serif;margin:0;font-size:34px}
 <a href="index.html">Маршруты</a>
 <a href="hotels.html">Гостиницы</a>
 </div>
-<div class="hat"><span>НТЦ ОХРАНА · командировки</span><span></span></div>
+<div class="hat"><span>НТЦ ОХРАНА · ведомственная охрана</span><span></span></div>
 <h1>ИИ помощник</h1>
-<p class="sub">Команда охрана грузов. Поезд, автобус, купе, гостиница. Если на сайте нет — помощник ищет в интернете. Билеты здесь не покупают.</p>
+<p class="sub">Команда охрана грузов. Закон 77-ФЗ, сопровождение, ЧП, документы, маршрут, гостиница. Нет на сайте — ищет в интернете. Билеты здесь не покупают.</p>
 <div class="panel">
-<div class="hat">справка по командировке</div>
+<div class="hat">справка по охране и командировке</div>
 <div class="log" id="log"></div>
 <div class="chips">
+<button type="button" onclick="ask('Что имеет право работник ведомственной охраны по 77-ФЗ')">77-ФЗ права</button>
+<button type="button" onclick="ask('Порядок сопровождения груза в пути')">Охрана груза</button>
+<button type="button" onclick="ask('ЧП в пути: что делать охране')">ЧП в пути</button>
 <button type="button" onclick="ask('Ижевск — Барнаул')">Ижевск — Барнаул</button>
-<button type="button" onclick="ask('купе и нижние')">Купе и нижние</button>
-<button type="button" onclick="ask('гостиницы')">Гостиницы</button>
-<button type="button" onclick="ask('сапсан и автобус')">Сапсан / автобус</button>
+<button type="button" onclick="ask('Гостиницы')">Гостиницы</button>
 </div>
-<div class="bar"><input id="q" placeholder="Откуда куда, купе, гостинка"><button class="go" type="button" onclick="send()">Спросить</button></div>
+<div class="bar"><input id="q" placeholder="груз, 77-ФЗ, маршрут, ЧП, гостинка"><button class="go" type="button" onclick="send()">Спросить</button></div>
 </div>
 </div>
 <script>
@@ -57,6 +58,12 @@ var d=document.createElement("div"); d.className="msg "+(me?"me":"bot"); d.inner
 }
 function brief(q){
 q=norm(q);
+if(/77|ведомствен|прав|обязан/.test(q))
+return "<b>77-ФЗ</b>Ведомственная охрана — закон 14.04.1999 № 77-ФЗ. Права: пропускной режим, проверка документов на объекте, досмотр транспорта, задержание нарушителя и передача в полицию. Сила, спецсредства и оружие — только по закону. Обязанности: охранять объект/груз, при ЧП сообщить в полицию и диспетчеру, рапорт.";
+if(/сопровожд|груз|наряд/.test(q))
+return "<b>ОХРАНА ГРУЗА</b>Ехать по наряду. Удостоверение и документы на груз при себе. Груз без охраны не оставлять. Ночёвка — гостиницы из списка сайта. ЧП — 112 и диспетчер, затем рапорт.";
+if(/чп|тревог|нападен|задержан/.test(q))
+return "<b>ЧП</b>1) Безопасность людей и груза. 2) 112 / полиция. 3) Диспетчер. 4) Не бросать груз без охраны. 5) Рапорт. Оружие — только при нападении, в пределах 77-ФЗ.";
 if(/ижевск|барнаул|агрыз|новосибир/.test(q))
 return "<b>КАРТА МАРШРУТА</b>Ижевск → Барнаул. Прямого поезда часто нет.<div class='cardx'><b>1. Нога</b>Электричка Ижевск → Агрыз</div><div class='cardx'><b>2. Поезд</b>Агрыз → Новосибирск, фильтр купе/нижние</div><div class='cardx'><b>3. Автобус</b>Новосибирск → Барнаул.</div>";
 if(/купе|нижн|мест|вагон/.test(q))
@@ -65,7 +72,7 @@ if(/гостин|отел|дилижан/.test(q))
 return "<b>ГОСТИНИЦА</b>Раздел Гостиницы — фильтр по городу.";
 if(/сапсан|автобус/.test(q))
 return "<b>РЕЙС</b>Фильтр: сапсан · поезд · автобус · поезд+автобус.";
-return "<b>НТЦ ОХРАНА</b>Спросите города, купе или гостиницу.";
+return "<b>НТЦ ОХРАНА</b>Спросите охрану груза, 77-ФЗ, маршрут, ЧП или гостиницу.";
 }
 function ask(t){ document.getElementById("q").value=t; send(); }
 async function send(){
@@ -78,6 +85,6 @@ if(j && j.text){ add(j.text, false); return; }
 add(brief(q), false);
 }
 document.getElementById("q").addEventListener("keydown", function(e){ if(e.key==="Enter") send(); });
-add("<b>НТЦ ОХРАНА</b>Помощник командировок. Спрашивайте маршрут, места, гостиницу.", false);
+add("<b>НТЦ ОХРАНА</b>Помощник ведомственной охраны. Спрашивайте закон, груз, ЧП, маршрут, гостиницу.", false);
 </script>
 </body></html>
