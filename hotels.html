@@ -32,6 +32,27 @@ table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;lett
 #gate{min-height:70vh;display:flex;align-items:center}
 .err{color:#f3b4b4;margin-top:10px}
 label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
+.wx{margin:0;overflow:hidden;background:linear-gradient(90deg,rgba(28,79,122,.45),rgba(122,74,24,.28),rgba(28,79,122,.45));border-bottom:1px solid rgba(243,224,184,.2);height:42px;display:flex;align-items:center}
+.wx[hidden]{display:none}
+.wx-track{display:inline-flex;align-items:center;gap:22px;white-space:nowrap;animation:wxrun 28s linear infinite;will-change:transform}
+.wx:hover .wx-track{animation-play-state:paused}
+.wx-item{display:inline-flex;align-items:center;gap:8px;color:#f6e7c6;font-weight:700;font-size:14px;letter-spacing:.02em}
+.wx-sep{opacity:.45;color:#f3e0b8}
+.wx-e{display:inline-block;font-size:22px;line-height:1;transform-origin:center}
+.wx-e.sun{animation:wxspin 5s linear infinite}
+.wx-e.cloud{animation:wxfloat 2.2s ease-in-out infinite}
+.wx-e.rain{animation:wxbounce .65s ease-in-out infinite}
+.wx-e.snow{animation:wxfall 1.5s ease-in-out infinite}
+.wx-e.storm{animation:wxflash .45s ease-in-out infinite}
+.wx-e.fog{animation:wxpulse 1.8s ease-in-out infinite}
+@keyframes wxrun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes wxspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes wxfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes wxbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@keyframes wxfall{0%{transform:translateY(-4px) rotate(-12deg)}50%{transform:translateY(5px) rotate(12deg)}100%{transform:translateY(-4px) rotate(-12deg)}}
+@keyframes wxflash{0%,100%{filter:brightness(1);transform:scale(1)}50%{filter:brightness(1.8);transform:scale(1.18)}}
+@keyframes wxpulse{0%,100%{opacity:.4;transform:scale(.95)}50%{opacity:1;transform:scale(1.08)}}
+
 </style>
 </head>
 <body>
@@ -63,6 +84,7 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 <div class="modal" id="m" onclick="if(event.target===this)this.classList.remove('show')">
 <div class="sheet">
 <img id="hp" alt="">
+<div class="wx" id="hwx" hidden><div class="wx-track" id="hwxTrack"></div></div>
 <div class="pad">
 <h2 id="hn"></h2>
 <p class="meta" id="hc"></p>
@@ -90,6 +112,6 @@ label.l{display:block;font-size:12px;color:#d4b483;margin-top:10px}
 <div style="margin-top:14px"><button class="btn" type="button" onclick="saveHotel()">Сохранить</button>
 <button class="btn" type="button" onclick="document.getElementById('ed').classList.remove('show')">Отмена</button></div>
 </div></div></div>
-<script src="hotels-app.js?v=1"></script>
+<script src="hotels-app.js?v=2"></script>
 <script src="team.js?v=3"></script>
 </body></html>

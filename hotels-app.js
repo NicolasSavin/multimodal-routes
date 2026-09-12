@@ -74,6 +74,7 @@ hereHotel=h;
 document.getElementById("hereIn").textContent="Кто здесь: загрузка…";
 document.getElementById("m").classList.add("show");
 fillHereIn(h);
+loadWeather(cityOf(h));
 }
 async function fillHereIn(h){
   var el=document.getElementById("hereIn"); if(!el||!h) return;
@@ -110,6 +111,65 @@ html+="<tr><td><button class='name' type='button' onclick='openHotel("+i+")'>"+h
 });
 document.getElementById("tb").innerHTML=html||"<tr><td colspan='5'>Нет совпадений</td></tr>";
 }
+
+var WX_CACHE={};
+function wxEmoji(code){
+  if(code===0||code===1) return {e:"☀️",k:"sun"};
+  if(code===2) return {e:"⛅",k:"cloud"};
+  if(code===3) return {e:"☁️",k:"cloud"};
+  if(code===45||code===48) return {e:"🌫️",k:"fog"};
+  if(code>=51&&code<=57) return {e:"🌦️",k:"rain"};
+  if(code>=61&&code<=67) return {e:"🌧️",k:"rain"};
+  if(code>=71&&code<=77) return {e:"❄️",k:"snow"};
+  if(code>=80&&code<=82) return {e:"🌧️",k:"rain"};
+  if(code>=85&&code<=86) return {e:"🌨️",k:"snow"};
+  if(code>=95) return {e:"⛈️",k:"storm"};
+  return {e:"🌡️",k:"cloud"};
+}
+function wxItem(em, text){
+  return '<span class="wx-item"><span class="wx-e '+em.k+'">'+em.e+'</span> '+text+"</span>";
+}
+function renderWx(city, f){
+  var track=document.getElementById("hwxTrack");
+  if(!track) return;
+  var cur=f.current||{};
+  var em=wxEmoji(cur.weather_code);
+  var days=f.daily||{};
+  var wd=["вс","пн","вт","ср","чт","пт","сб"];
+  var bits=[];
+  bits.push(wxItem(em, city+" сейчас "+Math.round(cur.temperature_2m)+"° · ощущается "+Math.round(cur.apparent_temperature)+"° · ветер "+Math.round(cur.wind_speed_10m)+" м/с"));
+  (days.time||[]).forEach(function(d,i){
+    var e=wxEmoji((days.weather_code||[])[i]);
+    var dt=new Date(d+"T12:00:00");
+    bits.push(wxItem(e, wd[dt.getDay()]+" "+dt.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})+": "+Math.round(days.temperature_2m_min[i])+"…"+Math.round(days.temperature_2m_max[i])+"°"));
+  });
+  var html=bits.join('<span class="wx-sep">✦</span>')+'<span class="wx-sep">✦</span>';
+  track.innerHTML=html+html;
+}
+async function loadWeather(city){
+  var box=document.getElementById("hwx");
+  var track=document.getElementById("hwxTrack");
+  if(!box||!track) return;
+  if(!city || city==="Другие"){
+    box.hidden=true;
+    return;
+  }
+  box.hidden=false;
+  track.innerHTML='<span class="wx-item"><span class="wx-e sun">☀️</span> Погода '+city+' · загрузка…</span><span class="wx-item"><span class="wx-e sun">☀️</span> Погода '+city+' · загрузка…</span>';
+  if(WX_CACHE[city]){ renderWx(city, WX_CACHE[city]); return; }
+  try{
+    var g=await (await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(city)+"&count=1&language=ru&country=RU")).json();
+    var r=(g.results&&g.results[0]);
+    if(!r){ track.innerHTML='<span class="wx-item">Погода: '+city+' не найден</span>'; return; }
+    var url="https://api.open-meteo.com/v1/forecast?latitude="+r.latitude+"&longitude="+r.longitude+"&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4";
+    var f=await (await fetch(url)).json();
+    WX_CACHE[city]=f;
+    renderWx(city,f);
+  }catch(e){
+    track.innerHTML='<span class="wx-item">Погода временно недоступна</span>';
+  }
+}
+
 document.getElementById("q").oninput=draw;
 document.getElementById("city").onchange=draw;
 if(user()) showApp();
