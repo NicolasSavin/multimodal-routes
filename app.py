@@ -468,6 +468,7 @@ def trains():
 
 HERE_FILE = "/tmp/here.json"
 TALK_FILE = "/tmp/talk.json"
+RADIO_FILE = "/tmp/radio.json"
 SOS_FILE = "/tmp/sos.json"
 S3_BUCKET = (os.environ.get("S3_BUCKET") or "").strip()
 S3_KEY = (os.environ.get("S3_KEY") or os.environ.get("AWS_ACCESS_KEY_ID") or "").strip()
@@ -1073,6 +1074,38 @@ def talk():
         )
         rows = rows[-60:]
         _jsave(TALK_FILE, rows)
+    return jsonify({"ok": True, "messages": rows})
+
+
+@app.get("/radio")
+@app.post("/radio")
+def radio():
+    data = request.get_json(silent=True) or {}
+    action = (data.get("action") or request.args.get("action") or "list").strip()
+    rows = _jload(RADIO_FILE, [])
+    if action == "send":
+        login = (data.get("login") or request.args.get("login") or "").strip().lower()
+        name = (data.get("name") or request.args.get("name") or login).strip()
+        media = data.get("media") or ""
+        kind = data.get("kind") or "audio/radio"
+        sec = int(data.get("sec") or 0)
+        if media and len(str(media)) > 1200000:
+            return jsonify({"ok": False, "error": "file too big"}), 400
+        if not login or not media:
+            return jsonify({"ok": False, "error": "empty"}), 400
+        rows.append(
+            {
+                "login": login,
+                "name": name,
+                "text": "рация",
+                "media": media,
+                "kind": kind,
+                "sec": sec,
+                "ts": int(time.time()),
+            }
+        )
+        rows = rows[-40:]
+        _jsave(RADIO_FILE, rows)
     return jsonify({"ok": True, "messages": rows})
 
 

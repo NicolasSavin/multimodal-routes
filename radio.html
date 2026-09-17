@@ -7,30 +7,35 @@
 <script src="users.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018}
-.bg{position:fixed;inset:0;background:radial-gradient(900px 420px at 50% 0%,#3a2210,transparent 55%),radial-gradient(700px 380px at 100% 100%,#1c4f7a22,transparent),#071018}
-.wrap{position:relative;max-width:560px;margin:0 auto;padding:18px 16px 32px;min-height:100vh;display:flex;flex-direction:column}
-.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.nav a,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
-h1{margin:0 0 6px;font-size:28px}.lead{color:#b7c6d6;margin:0 0 14px}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:16px}
+.bg{position:fixed;inset:0;background:radial-gradient(900px 420px at 50% 0%,#3a2210,transparent 55%),#071018}
+.wrap{position:relative;max-width:560px;margin:0 auto;padding:16px 16px 12px;min-height:100vh;display:flex;flex-direction:column}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nav a,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:9px 13px;text-decoration:none;font:inherit;cursor:pointer}
+h1{margin:0 0 4px;font-size:26px}.lead{color:#b7c6d6;margin:0 0 10px;font-size:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:14px}
 input{width:100%;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit;margin-top:8px}
 .err{color:#f3b4b4}
-.ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
-.ch b{letter-spacing:.14em;font-size:12px;color:#d4b483;text-transform:uppercase}
-.led{width:12px;height:12px;border-radius:50%;background:#2a4;box-shadow:0 0 10px #3c6;flex-shrink:0}
-.led.tx{background:#e33;box-shadow:0 0 14px #f44;animation:blink .5s infinite}
-.led.rx{background:#e8c989;box-shadow:0 0 14px #e8c989;animation:blink .8s infinite}
+.feed{flex:1;min-height:240px;max-height:calc(100vh - 340px);overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px 10px}
+.bubble{display:flex;gap:10px;align-items:center;max-width:92%;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.06)}
+.bubble.me{align-self:flex-end;background:linear-gradient(180deg,rgba(246,226,180,.22),rgba(200,148,60,.14))}
+.bubble.missed{outline:1px solid #e8c989}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#c8943c;color:#1a1206;font-weight:800;flex-shrink:0}
+.play{width:44px;height:44px;border:0;border-radius:50%;cursor:pointer;background:#f3e0b8;color:#1a1206;font:800 16px Manrope,system-ui;flex-shrink:0}
+.meta{flex:1;min-width:0}.meta b{display:block;font-size:14px}.meta span{font-size:12px;color:#8ea0b3}
+.miss{font-size:11px;color:#e8c989;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.dock{position:sticky;bottom:0;margin-top:8px}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ch b{letter-spacing:.12em;font-size:11px;color:#d4b483;text-transform:uppercase}
+.led{width:10px;height:10px;border-radius:50%;background:#2a4;box-shadow:0 0 8px #3c6}
+.led.tx{background:#e33;box-shadow:0 0 12px #f44;animation:blink .5s infinite}
+.led.rx{background:#e8c989;box-shadow:0 0 12px #e8c989;animation:blink .8s infinite}
 @keyframes blink{50%{opacity:.35}}
-.ptt-wrap{display:grid;place-items:center;padding:12px 0 8px}
-.ptt{width:min(220px,70vw);height:min(220px,70vw);border-radius:50%;border:8px solid rgba(243,224,184,.25);background:radial-gradient(circle at 40% 30%,#f6e2b4,#c8943c 55%,#7a4a18);color:#1a1206;font:800 16px/1.2 Manrope,system-ui;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;box-shadow:0 18px 40px rgba(0,0,0,.45),inset 0 8px 16px rgba(255,255,255,.25);user-select:none;-webkit-user-select:none;touch-action:none}
-.ptt:active,.ptt.on{transform:scale(.96);background:radial-gradient(circle at 40% 30%,#ff6b6b,#b01010 60%,#4a0000);color:#fff;border-color:#ff8a8a}
-.st{text-align:center;min-height:44px;color:#f3e0b8;font-weight:700;margin:8px 0 4px}
-.hint{text-align:center;color:#8ea0b3;font-size:13px;margin:0 0 12px}
-.log{margin-top:8px;max-height:38vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
-.row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.05)}
-.row button{border:0;border-radius:999px;padding:8px 12px;cursor:pointer;font:700 12px Manrope,system-ui;background:#f3e0b8;color:#1a1206}
-.row .n{flex:1;font-size:14px}.row .t{font-size:12px;color:#8ea0b3}
+.ptt-wrap{display:grid;place-items:center}
+.ptt{width:132px;height:132px;border-radius:50%;border:7px solid rgba(243,224,184,.25);background:radial-gradient(circle at 40% 30%,#f6e2b4,#c8943c 55%,#7a4a18);color:#1a1206;font:800 13px/1.15 Manrope,system-ui;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.4);user-select:none;-webkit-user-select:none;touch-action:none}
+.ptt:active,.ptt.on{transform:scale(.96);background:radial-gradient(circle at 40% 30%,#ff6b6b,#b01010 60%,#4a0000);color:#fff}
+.st{text-align:center;color:#f3e0b8;font-weight:700;margin:8px 0 0;min-height:22px;font-size:14px}
 .tog{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.empty{color:#8ea0b3;text-align:center;padding:24px 8px}
 </style>
 </head>
 <body>
@@ -49,28 +54,25 @@ input{width:100%;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,
 <div class="nav">
 <a href="index.html">Маршруты</a>
 <a href="hotels.html">Гостиницы</a>
-<a href="where.html">Кто где</a>
 <a href="team.html">Чат работников</a>
 <button class="btn" type="button" onclick="out()">Выйти</button>
 </div>
 <h1>Рация</h1>
-<p class="lead">Канал охраны. Держите кнопку — говорите. Отпустите — эфир уйдёт всем, кто на этой странице.</p>
-<div class="card">
+<p class="lead">Как Hello: сказал — запись остаётся. Пропустил эфир — нажми «слушать».</p>
+<div class="feed" id="log"><div class="empty">Пока тихо. Держите кнопку и скажите.</div></div>
+<div class="card dock">
 <div class="ch"><b>Общий канал</b><span class="led" id="led"></span></div>
-<div class="ptt-wrap">
-<button class="ptt" id="ptt" type="button">Говорить</button>
-</div>
-<p class="st" id="st">Звук выключен — нажмите «Включить эфир»</p>
-<p class="hint">Удерживайте кнопку. Не дольше 20 секунд.</p>
+<div class="ptt-wrap"><button class="ptt" id="ptt" type="button">Говорить</button></div>
+<p class="st" id="st">Включите эфир, чтобы слышать сразу</p>
 <div class="tog">
 <button class="btn" type="button" id="snd">Включить эфир</button>
+<button class="btn" type="button" id="missed">Прослушать пропущенные</button>
 </div>
 </div>
-<div class="card log" id="log" style="margin-top:12px"></div>
 </div>
 <script>
 var KEY="mm_user", API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
-var rec=null, stream=null, chunks=[], talking=false, soundOn=false, lastTs=0, queue=[], busy=false, recTimer=null, recSec=0;
+var rec=null, stream=null, chunks=[], talking=false, soundOn=false, lastTs=0, queue=[], busy=false, recTimer=null, recSec=0, shown={};
 function user(){ try{return JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){return null;} }
 function enter(){
   var l=String(document.getElementById("login").value||"").trim().toLowerCase().replace(/ё/g,"е");
@@ -81,19 +83,18 @@ function enter(){
   show();
 }
 function out(){ localStorage.removeItem(KEY); location.reload(); }
-function setLed(mode){
-  var el=document.getElementById("led");
-  el.className="led"+(mode?" "+mode:"");
-}
+function hkey(){ return "radio_heard_"+(user()&&user().login||""); }
+function heard(){ try{return JSON.parse(localStorage.getItem(hkey())||"{}");}catch(e){return {};} }
+function markHeard(ts){ var m=heard(); m[String(ts)]=1; localStorage.setItem(hkey(), JSON.stringify(m)); }
+function wasHeard(ts){ return !!heard()[String(ts)]; }
+function setLed(mode){ document.getElementById("led").className="led"+(mode?" "+mode:""); }
 function setSt(t){ document.getElementById("st").textContent=t; }
 function beep(freq, dur){
   try{
-    var Ctx=window.AudioContext||window.webkitAudioContext;
-    var c=new Ctx();
+    var Ctx=window.AudioContext||window.webkitAudioContext, c=new Ctx();
     var o=c.createOscillator(), g=c.createGain();
-    o.frequency.value=freq; o.type="square";
-    g.gain.value=0.05; o.connect(g); g.connect(c.destination);
-    o.start(); o.stop(c.currentTime+dur);
+    o.frequency.value=freq; o.type="square"; g.gain.value=0.05;
+    o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+dur);
     setTimeout(function(){c.close();}, (dur+0.05)*1000);
   }catch(e){}
 }
@@ -103,32 +104,48 @@ function mime(){
   for(var i=0;i<list.length;i++) if(MediaRecorder.isTypeSupported(list[i])) return list[i];
   return "";
 }
-function isRadio(m){
-  var k=String(m.kind||"");
-  return k.indexOf("radio")>=0 || String(m.text||"") === "рация";
-}
-function addRow(m, mine){
+function isRadio(m){ var k=String(m.kind||""); return k.indexOf("radio")>=0 || String(m.text||"")==="рация"; }
+function mineOf(m){ var u=user(); return u && String(m.login||"").toLowerCase()===String(u.login).toLowerCase(); }
+function addRow(m){
+  var id=String(m.ts||"")+"_"+String(m.login||"");
+  if(shown[id]) return;
+  shown[id]=1;
+  var box=document.getElementById("log");
+  var empty=box.querySelector(".empty"); if(empty) empty.remove();
+  var mine=mineOf(m);
+  if(mine) markHeard(m.ts);
+  var missed=!mine && !wasHeard(m.ts);
   var d=document.createElement("div");
-  d.className="row";
-  var when=m.ts? new Date(m.ts*1000).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"";
-  d.innerHTML="<div class='n'><div>"+String(m.name||m.login).replace(/</g,"")+(mine?" · вы":"")+"</div><div class='t'>"+when+"</div></div>";
+  d.className="bubble"+(mine?" me":"")+(missed?" missed":"");
+  d.dataset.ts=m.ts;
+  var when=m.ts? new Date(m.ts*1000).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"";
+  var sec=m.sec? (" · "+m.sec+" с"):"";
+  var name=String(m.name||m.login||"?").replace(/</g,"");
+  var init=(name.charAt(0)||"?").toUpperCase();
+  d.innerHTML="<div class='av'>"+init+"</div><div class='meta'><b>"+name+(mine?" · вы":"")+"</b><span>"+when+sec+"</span>"+(missed?"<div class='miss'>пропущено</div>":"")+"</div>";
   if(m.media){
     var b=document.createElement("button");
-    b.type="button"; b.textContent="Слушать";
-    b.onclick=function(){ playOne(m, true); };
+    b.type="button"; b.className="play"; b.textContent="▶";
+    b.onclick=function(){ playOne(m,true,d); };
     d.appendChild(b);
   }
-  var box=document.getElementById("log");
-  box.insertBefore(d, box.firstChild);
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
 }
-function playOne(m, manual){
+function playOne(m, manual, el){
   if(!m || !m.media) return Promise.resolve();
   return new Promise(function(done){
     setLed("rx");
     setSt("Эфир: "+(m.name||m.login));
     if(soundOn || manual) beep(980, 0.07);
     var a=new Audio(m.media);
-    a.onended=function(){ if(soundOn||manual) beep(420, 0.09); setLed(""); setSt(soundOn?"На связи. Держите кнопку.":"Эфир выключен"); done(); };
+    a.onended=function(){
+      markHeard(m.ts);
+      if(el){ el.classList.remove("missed"); var x=el.querySelector(".miss"); if(x) x.remove(); }
+      if(soundOn||manual) beep(420, 0.09);
+      setLed(""); setSt(soundOn?"На связи":"Запись сохранена — можно слушать позже");
+      done();
+    };
     a.onerror=function(){ setLed(""); done(); };
     var p=a.play();
     if(p && p.catch) p.catch(function(){ done(); });
@@ -138,26 +155,55 @@ function drain(){
   if(busy || !queue.length) return;
   busy=true;
   var m=queue.shift();
-  playOne(m,false).then(function(){ busy=false; drain(); });
+  var el=document.querySelector('.bubble[data-ts="'+m.ts+'"]');
+  playOne(m,false,el).then(function(){ busy=false; drain(); });
+}
+async function fetchRows(){
+  try{
+    var r=await fetch(API+"?path=/radio");
+    var j=await r.json();
+    if(j && j.ok && j.messages) return j.messages;
+  }catch(e){}
+  try{
+    var t=await (await fetch(API+"?path=/talk")).json();
+    return (t.messages||[]).filter(isRadio);
+  }catch(e){ return []; }
 }
 async function load(first){
-  try{
-    var j=await (await fetch(API+"?path=/talk")).json();
-    var rows=(j.messages||[]).filter(isRadio);
-    if(first){
-      document.getElementById("log").innerHTML="";
-      rows.slice(-12).forEach(function(m){ addRow(m, user() && String(m.login).toLowerCase()===String(user().login).toLowerCase()); });
-      lastTs = rows.length? rows[rows.length-1].ts : 0;
+  var rows=await fetchRows();
+  if(first){
+    shown={};
+    document.getElementById("log").innerHTML="";
+    rows.forEach(addRow);
+    lastTs = rows.length? rows[rows.length-1].ts : 0;
+    if(!rows.length) document.getElementById("log").innerHTML="<div class='empty'>Пока тихо. Держите кнопку и скажите.</div>";
+    return;
+  }
+  rows.forEach(function(m){
+    var id=String(m.ts||"")+"_"+String(m.login||"");
+    if(shown[id]){ if(m.ts>lastTs) lastTs=m.ts; return; }
+    if(mineOf(m) && lastTs && Math.abs((m.ts||0)-lastTs)<6){
+      shown[id]=1;
+      if(m.ts>lastTs) lastTs=m.ts;
       return;
     }
-    rows.forEach(function(m){
-      if(m.ts<=lastTs) return;
-      lastTs=m.ts;
-      var mine=user() && String(m.login).toLowerCase()===String(user().login).toLowerCase();
-      addRow(m, mine);
-      if(!mine && soundOn && m.media){ queue.push(m); drain(); }
+    if(m.ts>lastTs) lastTs=m.ts;
+    addRow(m);
+    if(!mineOf(m) && soundOn && m.media && !wasHeard(m.ts)){ queue.push(m); drain(); }
+  });
+}
+function playMissed(){
+  soundOn=true;
+  document.getElementById("snd").textContent="Эфир включён";
+  var rows=[].slice.call(document.querySelectorAll(".bubble.missed"));
+  if(!rows.length){ setSt("Пропущенных нет"); return; }
+  rows.forEach(function(){});
+  fetchRows().then(function(all){
+    all.forEach(function(m){
+      if(!mineOf(m) && !wasHeard(m.ts) && m.media) queue.push(m);
     });
-  }catch(e){}
+    drain();
+  });
 }
 async function startTalk(ev){
   if(ev) ev.preventDefault();
@@ -166,27 +212,21 @@ async function startTalk(ev){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     setSt("Микрофон в этом браузере недоступен"); return;
   }
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  }catch(e){
-    setSt("Нет доступа к микрофону"); return;
-  }
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ setSt("Нет доступа к микрофону"); return; }
   var type=mime();
   chunks=[];
   rec= type? new MediaRecorder(stream,{mimeType:type, audioBitsPerSecond:24000}) : new MediaRecorder(stream);
   rec.ondataavailable=function(e){ if(e.data && e.data.size) chunks.push(e.data); };
   rec.onstop=function(){ finishTalk(); };
   rec.start();
-  talking=true;
-  recSec=0;
+  talking=true; recSec=0;
   document.getElementById("ptt").classList.add("on");
   document.getElementById("ptt").textContent="Эфир";
-  setLed("tx");
-  setSt("Говорите… 0 с");
+  setLed("tx"); setSt("Говорите… 0 с");
   if(soundOn) beep(980, 0.07);
   recTimer=setInterval(function(){
-    recSec++;
-    setSt("Говорите… "+recSec+" с");
+    recSec++; setSt("Говорите… "+recSec+" с");
     if(recSec>=20) stopTalk();
   },1000);
 }
@@ -201,10 +241,7 @@ function stopTalk(ev){
 }
 function blobToData(blob){
   return new Promise(function(ok,bad){
-    var r=new FileReader();
-    r.onload=function(){ ok(r.result); };
-    r.onerror=bad;
-    r.readAsDataURL(blob);
+    var r=new FileReader(); r.onload=function(){ ok(r.result); }; r.onerror=bad; r.readAsDataURL(blob);
   });
 }
 async function finishTalk(){
@@ -217,18 +254,24 @@ async function finishTalk(){
   chunks=[];
   if(blob.size<400){ setSt("Слишком коротко"); return; }
   if(blob.size>900000){ setSt("Слишком длинно, повторите короче"); return; }
-  setSt("Отправка эфира…");
+  setSt("Отправка…");
   var data=await blobToData(blob);
   var u=user();
+  var body={action:"send",login:u.login,name:u.name||u.login,text:"рация",media:data,kind:"audio/radio",sec:recSec};
   try{
-    var r=await fetch(API+"?path=/talk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"send",login:u.login,name:u.name||u.login,text:"рация",media:data,kind:"audio/radio"})});
-    if(!r.ok) throw new Error("post");
-    if(soundOn) beep(420, 0.09);
-    setSt("Эфир ушёл");
-    load();
+    var r=await fetch(API+"?path=/radio",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error("radio");
   }catch(e){
-    setSt("Не отправилось. Проверьте сеть.");
+    try{
+      var r2=await fetch(API+"?path=/talk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!r2.ok) throw new Error("talk");
+    }catch(e2){ setSt("Не отправилось. Проверьте сеть."); return; }
   }
+  try{ fetch(API+"?path=/talk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); }catch(e){}
+  addRow({login:u.login,name:u.name||u.login,media:data,kind:"audio/radio",sec:recSec,ts:Math.floor(Date.now()/1000)});
+  lastTs=Math.floor(Date.now()/1000);
+  if(soundOn) beep(420, 0.09);
+  setSt("Сохранено. Можно прослушать позже.");
 }
 function bindPtt(){
   var b=document.getElementById("ptt");
@@ -244,13 +287,14 @@ function show(){
   document.getElementById("app").style.display="flex";
   bindPtt();
   load(true);
-  setInterval(load, 2000);
+  setInterval(load, 2500);
   document.getElementById("snd").onclick=function(){
     soundOn=!soundOn;
     this.textContent=soundOn?"Эфир включён":"Включить эфир";
-    setSt(soundOn?"На связи. Держите кнопку.":"Эфир выключен");
+    setSt(soundOn?"На связи. Новые сразу играются, старые остаются.":"Эфир выключен. Записи в ленте.");
     if(soundOn) beep(980,0.07);
   };
+  document.getElementById("missed").onclick=playMissed;
 }
 if(user()) show();
 </script>
