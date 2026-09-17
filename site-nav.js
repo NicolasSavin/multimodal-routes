@@ -12,4 +12,10 @@ if(!nav.querySelector('a[href="chat.html"]')){
 }
 var staff=nav.querySelector('a[href="team.html"]');
 if(staff && staff.textContent.indexOf("работник")<0) staff.textContent="Чат работников";
+if(staff && !nav.querySelector('a[href="radio.html"]')){
+  var r=document.createElement("a");
+  r.href="radio.html";
+  r.textContent="Рация";
+  staff.parentNode.insertBefore(r, staff.nextSibling);
+}
 })();
