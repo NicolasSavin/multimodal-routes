@@ -469,6 +469,7 @@ def trains():
 HERE_FILE = "/tmp/here.json"
 TALK_FILE = "/tmp/talk.json"
 RADIO_FILE = "/tmp/radio.json"
+NARYAD_FILE = "/tmp/naryad.json"
 SOS_FILE = "/tmp/sos.json"
 S3_BUCKET = (os.environ.get("S3_BUCKET") or "").strip()
 S3_KEY = (os.environ.get("S3_KEY") or os.environ.get("AWS_ACCESS_KEY_ID") or "").strip()
@@ -847,6 +848,22 @@ def here_save(rows):
     _jsave(HERE_FILE, {"date": today(), "people": rows})
 
 
+def naryad_load():
+    data = _jload(NARYAD_FILE, {})
+    if not isinstance(data, dict):
+        data = {}
+    if data.get("date") != today():
+        return {"date": today(), "naryad": {}, "incidents": []}
+    data.setdefault("naryad", {})
+    data.setdefault("incidents", [])
+    return data
+
+
+def naryad_save(data):
+    data["date"] = today()
+    _jsave(NARYAD_FILE, data)
+
+
 @app.get("/here")
 def here():
     action = (request.args.get("action") or "list").strip()
@@ -877,6 +894,40 @@ def here():
         here_save(rows)
         return jsonify({"ok": True, "people": rows})
     return jsonify({"ok": True, "date": today(), "people": rows})
+
+
+@app.get("/naryad")
+@app.post("/naryad")
+def naryad():
+    data = request.get_json(silent=True) or {}
+    action = (data.get("action") or request.args.get("action") or "list").strip()
+    cur = naryad_load()
+    if action == "set":
+        n = cur.get("naryad") or {}
+        fields = ("from", "to", "cargo", "senior", "crew", "hotel", "note")
+        for k in fields:
+            val = data.get(k)
+            if val is None:
+                val = request.args.get(k)
+            if val is not None:
+                n[k] = str(val)[:500]
+        n["by"] = (data.get("name") or request.args.get("name") or n.get("by") or "").strip()[:80]
+        n["ts"] = int(time.time())
+        cur["naryad"] = n
+        naryad_save(cur)
+        return jsonify({"ok": True, "date": today(), "naryad": n, "incidents": cur.get("incidents") or []})
+    if action == "incident":
+        login = (data.get("login") or request.args.get("login") or "").strip().lower()
+        name = (data.get("name") or request.args.get("name") or login).strip()
+        text = (data.get("text") or request.args.get("text") or "").strip()
+        if not text:
+            return jsonify({"ok": False, "error": "text"}), 400
+        inc = cur.get("incidents") or []
+        inc.append({"login": login, "name": name, "text": text[:1000], "ts": int(time.time())})
+        cur["incidents"] = inc[-40:]
+        naryad_save(cur)
+        return jsonify({"ok": True, "date": today(), "naryad": cur.get("naryad") or {}, "incidents": cur["incidents"]})
+    return jsonify({"ok": True, "date": today(), "naryad": cur.get("naryad") or {}, "incidents": cur.get("incidents") or []})
 
 
 @app.get("/chat")
@@ -985,6 +1036,29 @@ def chat():
         "4) Маршруты — раздел Маршруты этого сайта. Билеты не продаёшь. По-русски, коротко, по делу."
     )
     extra = ["Дата поиска: " + date, VO_HINT]
+    try:
+        nd = naryad_load()
+        n = nd.get("naryad") or {}
+        if n.get("from") or n.get("cargo") or n.get("senior"):
+            extra.append(
+                "Наряд сегодня: {fr} → {to}. Груз: {cg}. Старший: {sr}. Состав: {cr}. Гостиница: {ht}. {nt}".format(
+                    fr=n.get("from") or "—",
+                    to=n.get("to") or "—",
+                    cg=n.get("cargo") or "—",
+                    sr=n.get("senior") or "—",
+                    cr=n.get("crew") or "—",
+                    ht=n.get("hotel") or "—",
+                    nt=n.get("note") or "",
+                )
+            )
+        inc = nd.get("incidents") or []
+        if inc:
+            extra.append("ЧП сегодня:\n" + "\n".join(
+                "{n} — {t}".format(n=x.get("name") or x.get("login"), t=x.get("text") or "")
+                for x in inc[-8:]
+            ))
+    except Exception:
+        pass
     if origin and dest:
         extra.append("Направление: " + origin + " → " + dest)
     if live:

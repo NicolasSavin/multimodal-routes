@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Наряд смены</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="users.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#eef3f8;background:#071018}
+.bg{position:fixed;inset:0;background:radial-gradient(1000px 500px at 0% 0%,#1c4f7a,transparent 55%),radial-gradient(800px 400px at 100% 0%,#7a4a18,transparent 50%),#071018}
+.wrap{position:relative;max-width:720px;margin:0 auto;padding:22px 16px 64px}
+.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.nav a,.btn{color:#f3e0b8;background:rgba(255,255,255,.06);border:1px solid rgba(243,224,184,.18);border-radius:999px;padding:10px 14px;text-decoration:none;font:inherit;cursor:pointer}
+h1{margin:0 0 6px;font-size:32px}.lead{color:#b7c6d6;margin:0 0 14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:16px;margin-top:12px}
+label.l{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#d4b483;margin:10px 0 6px}
+input,textarea{width:100%;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b1624;color:#fff;font:inherit}
+textarea{min-height:72px;resize:vertical}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.go{border:0;cursor:pointer;padding:12px 18px;border-radius:999px;font:inherit;font-weight:700;color:#1a1206;background:linear-gradient(180deg,#f6e2b4,#c8943c);margin-top:12px}
+.kv{margin:8px 0;font-size:16px}.kv b{color:#d4b483;display:inline-block;min-width:110px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.inc{padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}
+.inc .t{font-size:12px;color:#8ea0b3}
+.err{color:#f3b4b4}.ok{color:#b8f0d3;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div id="gate" class="wrap">
+<div class="card" style="max-width:420px;margin:40px auto;width:100%">
+<h1 style="font-size:28px">Вход</h1>
+<p class="lead">Наряд только для сотрудников.</p>
+<input id="login" placeholder="Логин" autocomplete="username">
+<input id="pass" type="password" placeholder="Пароль" autocomplete="current-password">
+<p class="err" id="err"></p>
+<button class="btn" type="button" style="margin-top:14px" onclick="enter()">Войти</button>
+</div>
+</div>
+<div id="app" class="wrap" style="display:none">
+<div class="nav">
+<a href="index.html">Маршруты</a>
+<a href="hotels.html">Гостиницы</a>
+<a href="radio.html">Рация</a>
+<a href="team.html">Чат работников</a>
+<a href="where.html">Кто где</a>
+<button class="btn" type="button" onclick="out()">Выйти</button>
+</div>
+<h1>Наряд смены</h1>
+<p class="lead" id="when"></p>
+<div class="card" id="view"></div>
+<div class="card">
+<b>Поставить / обновить наряд</b>
+<div class="grid">
+<div><label class="l">Откуда</label><input id="fr"></div>
+<div><label class="l">Куда</label><input id="to"></div>
+</div>
+<label class="l">Груз</label><input id="cg" placeholder="что охраняем">
+<div class="grid">
+<div><label class="l">Старший</label><input id="sr"></div>
+<div><label class="l">Гостиница</label><input id="ht"></div>
+</div>
+<label class="l">Состав</label><input id="cr" placeholder="фамилии через запятую">
+<label class="l">Примечание</label><textarea id="nt" placeholder="время выхода, документы, особые указания"></textarea>
+<button class="go" type="button" onclick="saveN()">Сохранить наряд</button>
+<p class="ok" id="saved"></p>
+</div>
+<div class="card">
+<b>Журнал ЧП за сегодня</b>
+<div id="inc"></div>
+<label class="l">Запись</label>
+<input id="incText" placeholder="что случилось">
+<button class="go" type="button" onclick="saveInc()">Добавить в журнал</button>
+</div>
+</div>
+<script>
+var KEY="mm_user", API="https://functions.yandexcloud.net/d4e5aa975qllld89nvh0";
+function norm(s){return String(s||"").trim().toLowerCase().replace(/ё/g,"е");}
+function user(){ try{return JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){return null;} }
+function enter(){
+  var l=norm(document.getElementById("login").value), p=String(document.getElementById("pass").value||"").trim();
+  var u=(window.HOTEL_USERS||[]).find(function(x){return norm(x.login)===l && String(x.pass)===p;});
+  if(!u){document.getElementById("err").textContent="Неверный логин или пароль"; return;}
+  localStorage.setItem(KEY, JSON.stringify({login:u.login, admin:!!u.admin, name:u.name||u.login}));
+  show();
+}
+function out(){ localStorage.removeItem(KEY); location.reload(); }
+function esc(s){return String(s||"").replace(/</g,"");}
+function draw(j){
+  document.getElementById("when").textContent="Сегодня "+(j.date||"");
+  var n=j.naryad||{};
+  var empty=!n.from && !n.to && !n.cargo;
+  var html=empty
+    ? "<p class='lead' style='margin:0'>Наряд ещё не поставлен. Заполните ниже — увидят все, кто вошёл.</p>"
+    : "<div class='kv'><b>Маршрут</b> "+esc(n.from||"—")+" → "+esc(n.to||"—")+"</div>"
+      +"<div class='kv'><b>Груз</b> "+esc(n.cargo||"—")+"</div>"
+      +"<div class='kv'><b>Старший</b> "+esc(n.senior||"—")+"</div>"
+      +"<div class='kv'><b>Состав</b> "+esc(n.crew||"—")+"</div>"
+      +"<div class='kv'><b>Гостиница</b> "+esc(n.hotel||"—")+"</div>"
+      +(n.note? "<div class='kv'><b>Указания</b> "+esc(n.note)+"</div>":"")
+      +(n.by? "<div class='kv'><b>Поставил</b> "+esc(n.by)+"</div>":"");
+  document.getElementById("view").innerHTML=html;
+  if(!empty){
+    document.getElementById("fr").value=n.from||"";
+    document.getElementById("to").value=n.to||"";
+    document.getElementById("cg").value=n.cargo||"";
+    document.getElementById("sr").value=n.senior||"";
+    document.getElementById("ht").value=n.hotel||"";
+    document.getElementById("cr").value=n.crew||"";
+    document.getElementById("nt").value=n.note||"";
+  }
+  var inc=j.incidents||[];
+  document.getElementById("inc").innerHTML=inc.length? inc.slice().reverse().map(function(x){
+    var t=x.ts? new Date(x.ts*1000).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}):"";
+    return "<div class='inc'><div>"+esc(x.name||x.login)+"</div><div>"+esc(x.text)+"</div><div class='t'>"+t+"</div></div>";
+  }).join("") : "<p class='lead' style='margin:8px 0 0'>ЧП нет.</p>";
+}
+async function load(){
+  try{
+    var j=await (await fetch(API+"?path=/naryad")).json();
+    draw(j);
+  }catch(e){
+    document.getElementById("view").innerHTML="<p class='lead' style='margin:0'>Наряд в облаке ещё не включён. Вставьте свежий app.py в функцию.</p>";
+  }
+}
+async function saveN(){
+  var u=user(); if(!u) return;
+  var body={action:"set", name:u.name||u.login,
+    from:document.getElementById("fr").value.trim(),
+    to:document.getElementById("to").value.trim(),
+    cargo:document.getElementById("cg").value.trim(),
+    senior:document.getElementById("sr").value.trim(),
+    hotel:document.getElementById("ht").value.trim(),
+    crew:document.getElementById("cr").value.trim(),
+    note:document.getElementById("nt").value.trim()};
+  try{
+    var j=await (await fetch(API+"?path=/naryad",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
+    if(!j.ok) throw new Error("no");
+    document.getElementById("saved").textContent="Наряд сохранён, виден всем.";
+    draw(j);
+  }catch(e){ document.getElementById("saved").textContent="Не сохранилось. Нужен свежий app.py в функции."; }
+}
+async function saveInc(){
+  var u=user(); if(!u) return;
+  var text=document.getElementById("incText").value.trim(); if(!text) return;
+  document.getElementById("incText").value="";
+  try{
+    var j=await (await fetch(API+"?path=/naryad",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"incident",login:u.login,name:u.name||u.login,text:text})})).json();
+    draw(j);
+  }catch(e){ alert("Не записалось"); }
+}
+function show(){
+  document.getElementById("gate").style.display="none";
+  document.getElementById("app").style.display="block";
+  load(); setInterval(load, 15000);
+}
+if(user()) show();
+</script>
+<script src="team.js?v=3"></script>
+</body>
+</html>

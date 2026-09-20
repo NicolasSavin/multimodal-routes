@@ -18,4 +18,11 @@ if(staff && !nav.querySelector('a[href="radio.html"]')){
   r.textContent="Рация";
   staff.parentNode.insertBefore(r, staff.nextSibling);
 }
+if(!nav.querySelector('a[href="naryad.html"]') && nav.querySelector('a[href="radio.html"], a[href="team.html"]')){
+  var n=document.createElement("a");
+  n.href="naryad.html";
+  n.textContent="Наряд";
+  var after=nav.querySelector('a[href="radio.html"]')||staff;
+  after.parentNode.insertBefore(n, after.nextSibling);
+}
 })();
