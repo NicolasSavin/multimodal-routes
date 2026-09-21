@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>НТЦ Охрана · ИИ помощник</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<script src="users.js"></script>
 <style>
 :root{--gold:#e8c989;--ink:#140f0a;--line:rgba(232,201,137,.18)}
 *{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;color:#f3e6d0;background:#120e0a}
@@ -26,13 +27,32 @@ h1{font-family:"Playfair Display",serif;margin:0;font-size:34px}
 .bar{display:flex;gap:8px;margin-top:12px}
 .bar input{flex:1;border:1px solid var(--line);background:#1a140f;color:#fff;border-radius:14px;padding:13px 14px;font:inherit}
 .go{border:0;cursor:pointer;border-radius:14px;padding:13px 16px;font:inherit;font-weight:700;color:var(--ink);background:linear-gradient(180deg,#f0d7a6,#c4923a)}
+.err{color:#f3b4b4}
+input.gate{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#1a140f;color:#fff;font:inherit;margin-top:8px}
+.btn{color:var(--gold);border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:999px;padding:8px 12px;text-decoration:none;font:inherit;cursor:pointer}
 </style></head>
 <body>
 <div class="bg"></div>
-<div id="app" class="wrap">
+<div id="gate" class="wrap">
+<div class="panel" style="max-width:420px;margin:40px auto;width:100%">
+<h1 style="font-size:28px">Вход</h1>
+<p class="sub">ИИ помощник только для сотрудников.</p>
+<input class="gate" id="login" placeholder="Логин" autocomplete="username">
+<input class="gate" id="pass" type="password" placeholder="Пароль" autocomplete="current-password">
+<p class="err" id="err"></p>
+<button class="btn" type="button" style="margin-top:14px" onclick="enter()">Войти</button>
+</div>
+</div>
+<div id="app" class="wrap" style="display:none">
 <div class="nav">
 <a href="index.html">Маршруты</a>
 <a href="hotels.html">Гостиницы</a>
+<span class="nav-lab">Для работников</span>
+<a href="where.html">Кто где</a>
+<a href="team.html">Чат работников</a>
+<a href="radio.html">Рация</a>
+<a href="naryad.html">Наряд</a>
+<button class="ghost" type="button" onclick="out()">Выйти</button>
 </div>
 <div class="hat"><span>НТЦ ОХРАНА · ведомственная охрана</span><span></span></div>
 <h1>ИИ помощник</h1>
@@ -84,7 +104,23 @@ if(j && j.text){ add(j.text, false); return; }
 }catch(e){}
 add(brief(q), false);
 }
+function user(){ try{return JSON.parse(localStorage.getItem("mm_user")||"null");}catch(e){return null;} }
+function enter(){
+var l=norm(document.getElementById("login").value), p=String(document.getElementById("pass").value||"").trim();
+var u=(window.HOTEL_USERS||[]).find(function(x){return norm(x.login)===l && String(x.pass)===p;});
+if(!u){document.getElementById("err").textContent="Неверный логин или пароль"; return;}
+localStorage.setItem("mm_user", JSON.stringify({login:u.login, admin:!!u.admin, name:u.name||u.login}));
+show();
+}
+function out(){ localStorage.removeItem("mm_user"); location.reload(); }
+function show(){
+document.getElementById("gate").style.display="none";
+document.getElementById("app").style.display="flex";
 document.getElementById("q").addEventListener("keydown", function(e){ if(e.key==="Enter") send(); });
 add("<b>НТЦ ОХРАНА</b>Помощник ведомственной охраны. Спрашивайте закон, груз, ЧП, маршрут, гостиницу.", false);
+}
+if(user()) show();
 </script>
+<script src="staff-nav.js"></script>
+<script src="team.js?v=3"></script>
 </body></html>
