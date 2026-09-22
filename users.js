@@ -1,3 +1,4 @@
+(function(){try{var h=(location.hash||"").replace(/^#/,"");if(h.indexOf("mm=")==0){var u=JSON.parse(decodeURIComponent(h.slice(3)));if(u&&u.login){localStorage.setItem("mm_user",JSON.stringify({login:String(u.login),name:String(u.name||u.login),admin:!!u.admin}));history.replaceState(null,"",location.pathname+location.search);}}}catch(e){}})();
 window.HOTEL_USERS = [
   {login: "савин", pass: "4731", admin: true, name: "Савин"},
   {login: "азябин", pass: "22101974", name: "Азябин"},
